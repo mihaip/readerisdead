@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import logging
 import sys
@@ -9,11 +10,8 @@ import log
 
 _BASE_PARAMETERS = {
     'mediaRss': 'true',
-    'client': 'reader-feed-archive',
-    'n': 1000
+    'client': 'reader-feed-archive'
 }
-
-_MAX_FETCHES = 1000
 
 _ATOM_NS = 'http://www.w3.org/2005/Atom'
 _READER_NS = 'http://www.google.com/schemas/reader/atom/'
@@ -23,18 +21,43 @@ ET.register_namespace('atom', _ATOM_NS)
 ET.register_namespace('idx', 'urn:atom-extension:indexing')
 ET.register_namespace('media', 'http://search.yahoo.com/mrss/')
 
+def main():
+  log.init()
+  parser = argparse.ArgumentParser(
+    description='Fetch archived feed data from Google Reader')
+  parser.add_argument('feed_urls', metavar='feed_url', nargs='+',
+                      help='Feed URL to fetch archived data for')
+  parser.add_argument('--chunk_size', type=int, default=1000,
+                      help='Number of items to request per Google Reader API '
+                           'call (higher is more efficient)')
+  parser.add_argument('--max_items', type=int, default=0,
+                      help='Maxmium number of items to fetch per feed (0 for '
+                           'no limit)')
+  parser.add_argument('--oldest_item_timestamp_sec', type=int, default=0,
+                      help='Timestamp (in seconds since the epoch) of the '
+                           'oldest item that should be returned (0 for no '
+                           'timestamp restriction)')
+  parser.add_argument('--newest_item_timestamp_sec', type=int, default=0,
+                      help='Timestamp (in seconds since the epoch) of the '
+                           'newest item that should be returned (0 for no '
+                           'timestamp restriction)')
+  args = parser.parse_args()
+  _BASE_PARAMETERS['n'] = args.chunk_size
+  if args.oldest_item_timestamp_sec:
+    _BASE_PARAMETERS['ot'] = args.oldest_item_timestamp_sec
+  if args.newest_item_timestamp_sec:
+    _BASE_PARAMETERS['nt'] = args.newest_item_timestamp_sec
+  for feed_url in args.feed_urls:
+    fetch_feed(feed_url, args.max_items)
 
 # params
-# - oldest timestamp
-# - newest timestamps
-# - entries per chunk
-# - max number of total items
 # - retry attempts
+# - OPML file (local or remote) to use for feed URLs
 
-def fetch_feed(feed_url):
+def fetch_feed(feed_url, max_items):
     continuation_token = None
     combined_feed = None
-    fetches = 0
+    total_entries = 0
     while True:
         parameters = _BASE_PARAMETERS.copy()
         if continuation_token:
@@ -68,17 +91,14 @@ def fetch_feed(feed_url):
             continuation_token = continuation_element.text
         else:
             break
-        fetches += 1
-        if fetches > _MAX_FETCHES:
-            break
+        total_entries += len(entries)
+        if max_items and total_entries >= max_items:
+          break
     combined_feed_tree = ET.ElementTree(combined_feed)
     combined_feed_tree.write(
         sys.stdout,
         xml_declaration=True,
         encoding='utf-8')
 
-log.init()
-
-fetch_feed('http://feeds.guardian.co.uk/theguardian/world/rss')
-
-logging.root.setLevel(logging.DEBUG)
+if __name__ == "__main__":
+    main()
