@@ -73,12 +73,6 @@ def main():
       output_path = None
     fetch_feed(feed_url, args.max_items, output_path)
 
-# params
-# - validate URLs
-# - retry attempts
-# - OPML file URL
-# - output naming scheme
-
 def extract_feed_urls_from_opml_file(opml_file_path):
   tree = ET.parse(opml_file_path)
   feed_urls = []
