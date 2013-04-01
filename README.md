@@ -7,3 +7,4 @@ feed-archive
 - add retry support
 - add OPML file URL option
 - add output naming scheme option
+- suport ~ in OPML paths in (normalize before giving to ElementTree?)
