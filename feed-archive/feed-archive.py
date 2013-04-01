@@ -54,22 +54,26 @@ def main():
     _BASE_PARAMETERS['nt'] = args.newest_item_timestamp_sec
   for feed_url in args.feed_urls:
     if args.output_directory != '-':
-      file_name = feed_url
-      if file_name.startswith('http://'):
-        file_name = file_name[7:]
-      if file_name.startswith('https://'):
-        file_name = file_name[8:]
-      for c in [os.sep, '/', ':', '?']:
-        file_name = file_name.replace(c, '-')
-      output_path = os.path.join(args.output_directory, file_name)
+      output_path = get_output_path(args.output_directory, feed_url)
     else:
       output_path = None
     fetch_feed(feed_url, args.max_items, output_path)
 
 # params
+# - validate URLs
 # - retry attempts
 # - OPML file (local or remote) to use for feed URLs
 # - output naming scheme
+
+def get_output_path(base_path, feed_url):
+  file_name = feed_url
+  if file_name.startswith('http://'):
+    file_name = file_name[7:]
+  if file_name.startswith('https://'):
+    file_name = file_name[8:]
+  for c in [os.sep, '/', ':', '?']:
+    file_name = file_name.replace(c, '-')
+  return os.path.join(base_path, file_name)
 
 def fetch_feed(feed_url, max_items, output_path):
   continuation_token = None
