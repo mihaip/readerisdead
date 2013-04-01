@@ -1,6 +1,8 @@
 import argparse
 import datetime
 import logging
+import os
+import os.path
 import sys
 import urllib
 import urllib2
@@ -41,6 +43,9 @@ def main():
                       help='Timestamp (in seconds since the epoch) of the '
                            'newest item that should be returned (0 for no '
                            'timestamp restriction)')
+  parser.add_argument('--output_directory', default='./',
+                      help='Directory where to place feed archive data. Use '
+                            '"-" to output archive data to stdout.')
   args = parser.parse_args()
   _BASE_PARAMETERS['n'] = args.chunk_size
   if args.oldest_item_timestamp_sec:
@@ -48,13 +53,25 @@ def main():
   if args.newest_item_timestamp_sec:
     _BASE_PARAMETERS['nt'] = args.newest_item_timestamp_sec
   for feed_url in args.feed_urls:
-    fetch_feed(feed_url, args.max_items)
+    if args.output_directory != '-':
+      file_name = feed_url
+      if file_name.startswith('http://'):
+        file_name = file_name[7:]
+      if file_name.startswith('https://'):
+        file_name = file_name[8:]
+      for c in [os.sep, '/', ':', '?']:
+        file_name = file_name.replace(c, '-')
+      output_path = os.path.join(args.output_directory, file_name)
+    else:
+      output_path = None
+    fetch_feed(feed_url, args.max_items, output_path)
 
 # params
 # - retry attempts
 # - OPML file (local or remote) to use for feed URLs
+# - output naming scheme
 
-def fetch_feed(feed_url, max_items):
+def fetch_feed(feed_url, max_items, output_path):
   continuation_token = None
   combined_feed = None
   total_entries = 0
@@ -78,11 +95,16 @@ def fetch_feed(feed_url, max_items):
       last_crawl_timestamp = datetime.datetime.utcfromtimestamp(
           float(last_crawl_timestamp_msec)/1000)
       oldest_message = " (oldest is from %s)" % last_crawl_timestamp
-    logging.info("Loaded %d entries%s", len(entries), oldest_message)
+    logging.info("Loaded %d items%s", len(entries), oldest_message)
     if combined_feed:
       combined_feed.extend(entries)
     else:
       combined_feed = response_root
+
+    total_entries += len(entries)
+    if max_items and total_entries >= max_items:
+      break
+
     continuation_element = response_root.find(
         '{%s}continuation' % _READER_NS)
     if continuation_element is not None:
@@ -91,14 +113,20 @@ def fetch_feed(feed_url, max_items):
       continuation_token = continuation_element.text
     else:
       break
-    total_entries += len(entries)
-    if max_items and total_entries >= max_items:
-      break
   combined_feed_tree = ET.ElementTree(combined_feed)
+
+  if output_path:
+    output_file = open(output_path, 'w')
+    logging.info("Writing %d items to %s" % (total_entries, output_path))
+  else:
+    output_file = sys.stdout
+    logging.info("Writing %d items to stdout" % total_entries)
   combined_feed_tree.write(
-      sys.stdout,
+      output_file,
       xml_declaration=True,
       encoding='utf-8')
+  if output_path:
+    output_file.close()
 
 if __name__ == "__main__":
     main()
