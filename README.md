@@ -7,4 +7,3 @@ feed-archive
 - add retry support
 - add OPML file URL option
 - add output naming scheme option
-- handle shared tags
