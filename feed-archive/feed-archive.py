@@ -1,12 +1,15 @@
 import argparse
+import collections
 import datetime
 import logging
 import os
 import os.path
 import sys
+import threading
 import urllib
 import urllib2
 import xml.etree.cElementTree as ET
+import Queue
 
 import log
 
@@ -55,6 +58,8 @@ def main():
                       help='Timestamp (in seconds since the epoch) of the '
                            'newest item that should be returned (0 for no '
                            'timestamp restriction)')
+  parser.add_argument('--parallelism', type=int, default=10,
+                      help='number of feeds to fetch in parallel.')
 
   args = parser.parse_args()
   if args.opml_file:
@@ -66,13 +71,70 @@ def main():
   logging.info('Fetching archived data for %d feed%s',
       len(feed_urls), len(feed_urls) == 1 and '' or 's')
 
+  request_queue = Queue.Queue()
+  response_queue = Queue.Queue()
+  for i in xrange(args.parallelism):
+    thread = FeedFetchThread(request_queue, response_queue)
+    thread.start()
+
   for feed_url in feed_urls:
     if args.output_directory != '-':
       output_path = get_output_path(
           normalize_path(args.output_directory), feed_url)
     else:
       output_path = None
-    fetch_feed(feed_url, args.max_items, output_path)
+    request_queue.put(
+      FeedFetchRequest(feed_url, args.max_items, output_path))
+
+  success_count = 0
+  failures = []
+
+  for i in xrange(len(feed_urls)):
+    response = response_queue.get()
+    if response.is_success:
+      success_count += 1
+    else:
+      failures.append(response.feed_url)
+    response_queue.task_done()
+
+  logging.info("Fetched data for %d feeds", success_count)
+  if failures:
+    logging.warning("Could not fetch %d feeds:", len(failures))
+    for feed_url in failures:
+      logging.warning("  %s", feed_url)
+
+
+class FeedFetchThread(threading.Thread):
+  def __init__(self, request_queue, response_queue):
+    threading.Thread.__init__(self)
+    self._request_queue = request_queue
+    self._response_queue = response_queue
+    self.daemon = True
+
+  def run(self):
+    while True:
+      request = self._request_queue.get()
+      response = FeedFetchResponse(request.feed_url, is_success=True)
+      try:
+        fetch_feed(request.feed_url, request.max_items, request.output_path)
+      except:
+        logging.error(
+            "Exception when fetching %s", request.feed_url, exc_info=True)
+        response.is_success = False
+      finally:
+        self._request_queue.task_done()
+        self._response_queue.put(response)
+
+class FeedFetchRequest(object):
+  def __init__(self, feed_url, max_items, output_path):
+    self.feed_url = feed_url
+    self.max_items = max_items
+    self.output_path = output_path
+
+class FeedFetchResponse(object):
+  def __init__(self, feed_url, is_success):
+    self.feed_url = feed_url
+    self.is_success = is_success
 
 def extract_feed_urls_from_opml_file(opml_file_path):
   tree = ET.parse(opml_file_path)
@@ -94,14 +156,22 @@ def init_base_parameters(args):
   if args.newest_item_timestamp_sec:
     _BASE_PARAMETERS['nt'] = args.newest_item_timestamp_sec
 
+_generated_file_names = {}
 def get_output_path(base_path, feed_url):
   file_name = feed_url
   if file_name.startswith('http://'):
     file_name = file_name[7:]
   if file_name.startswith('https://'):
     file_name = file_name[8:]
-  for c in [os.sep, '/', ':', '?']:
+  for c in [os.sep, '/', ':', '?', '&']:
     file_name = file_name.replace(c, '-')
+  if len(file_name) > 64:
+    file_name = file_name[:64]
+  if file_name in _generated_file_names:
+    _generated_file_names[file_name] += 1
+    file_name += '-%d' % _generated_file_names[file_name]
+  else:
+    _generated_file_names[file_name] = 0
   return os.path.join(base_path, file_name)
 
 def normalize_path(path):
