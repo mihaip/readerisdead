@@ -58,7 +58,7 @@ def main():
 
   args = parser.parse_args()
   if args.opml_file:
-    feed_urls = extract_feed_urls_from_opml_file(args.opml_file)
+    feed_urls = extract_feed_urls_from_opml_file(normalize_path(args.opml_file))
   else:
     feed_urls = args.feed_urls
   init_base_parameters(args)
@@ -68,7 +68,8 @@ def main():
 
   for feed_url in feed_urls:
     if args.output_directory != '-':
-      output_path = get_output_path(args.output_directory, feed_url)
+      output_path = get_output_path(
+          normalize_path(args.output_directory), feed_url)
     else:
       output_path = None
     fetch_feed(feed_url, args.max_items, output_path)
@@ -103,7 +104,8 @@ def get_output_path(base_path, feed_url):
     file_name = file_name.replace(c, '-')
   return os.path.join(base_path, file_name)
 
-
+def normalize_path(path):
+  return os.path.abspath(os.path.expanduser(path))
 
 def fetch_feed(feed_url, max_items, output_path):
   continuation_token = None
