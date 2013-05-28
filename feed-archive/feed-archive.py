@@ -15,7 +15,6 @@ import Queue
 import log
 
 _BASE_PARAMETERS = {
-  'mediaRss': 'true',
   'client': 'reader-feed-archive'
 }
 
@@ -119,7 +118,20 @@ class FeedFetchThread(threading.Thread):
       request = self._request_queue.get()
       response = FeedFetchResponse(request.feed_url, is_success=True)
       try:
-        fetch_feed(request.feed_url, request.max_items, request.output_path)
+          try:
+            fetch_feed(request.feed_url, request.max_items, request.output_path)
+          except urllib2.HTTPError, e:
+            # Reader's MediaRSS reconstruction code appears to have a bug for
+            # some feeds (it causes an exception to be thrown), so we retry with
+            # MediaRSS turned off before giving up.
+            if e.code == 500:
+              logging.warn(('500 response when fetching %s, '
+                'retrying with MediaRSS turned off') % request.feed_url)
+              fetch_feed(
+                request.feed_url,
+                request.max_items,
+                request.output_path,
+                media_rss=False)
       except:
         logging.error(
             "Exception when fetching %s", request.feed_url, exc_info=True)
@@ -195,7 +207,7 @@ def get_stream_id(feed_url):
     pass
   return 'feed/%s' % feed_url
 
-def fetch_feed(feed_url, max_items, output_path):
+def fetch_feed(feed_url, max_items, output_path, media_rss=True):
   continuation_token = None
   combined_feed = None
   total_entries = 0
@@ -203,6 +215,8 @@ def fetch_feed(feed_url, max_items, output_path):
     parameters = _BASE_PARAMETERS.copy()
     if continuation_token:
       parameters['c'] = continuation_token
+    if media_rss:
+      parameters['mediaRss'] = 'true'
     stream_id = get_stream_id(feed_url)
     reader_url = (
       'http://www.google.com/reader/public/atom/hifi/%s?%s' %
