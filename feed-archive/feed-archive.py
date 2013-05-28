@@ -117,9 +117,18 @@ class FeedFetchThread(threading.Thread):
     while True:
       request = self._request_queue.get()
       response = FeedFetchResponse(request.feed_url, is_success=True)
+      def fetch(media_rss=True, hifi=True):
+        fetch_feed(
+            request.feed_url,
+            request.max_items,
+            request.output_path,
+            media_rss=media_rss,
+            hifi=hifi)
+
       try:
+        try:
           try:
-            fetch_feed(request.feed_url, request.max_items, request.output_path)
+            fetch()
           except urllib2.HTTPError, e:
             # Reader's MediaRSS reconstruction code appears to have a bug for
             # some feeds (it causes an exception to be thrown), so we retry with
@@ -127,11 +136,17 @@ class FeedFetchThread(threading.Thread):
             if e.code == 500:
               logging.warn(('500 response when fetching %s, '
                 'retrying with MediaRSS turned off') % request.feed_url)
-              fetch_feed(
-                request.feed_url,
-                request.max_items,
-                request.output_path,
-                media_rss=False)
+              fetch(media_rss=False)
+            else:
+              response.is_success = False
+          except ET.ParseError, e:
+              logging.warn(('XML parse error when fetching %s, '
+                'retrying with MediaRSS turned off') % request.feed_url)
+              fetch(media_rss=False)
+        except ET.ParseError, e:
+              logging.warn(('XML parse error when fetching %s, retrying with '
+                  'MediaRSS and high-fidelity turned off') % request.feed_url)
+              fetch(media_rss=False, hifi=False)
       except:
         logging.error(
             "Exception when fetching %s", request.feed_url, exc_info=True)
@@ -207,7 +222,7 @@ def get_stream_id(feed_url):
     pass
   return 'feed/%s' % feed_url
 
-def fetch_feed(feed_url, max_items, output_path, media_rss=True):
+def fetch_feed(feed_url, max_items, output_path, media_rss=True, hifi=True):
   continuation_token = None
   combined_feed = None
   total_entries = 0
@@ -219,8 +234,9 @@ def fetch_feed(feed_url, max_items, output_path, media_rss=True):
       parameters['mediaRss'] = 'true'
     stream_id = get_stream_id(feed_url)
     reader_url = (
-      'http://www.google.com/reader/public/atom/hifi/%s?%s' %
-      (urllib.quote(stream_id), urllib.urlencode(parameters)))
+      'http://www.google.com/reader/public/atom/%s%s?%s' %
+      ('hifi/' if hifi else '', urllib.quote(stream_id),
+          urllib.urlencode(parameters)))
     logging.debug('Fetching %s', reader_url)
     request = urllib2.Request(reader_url)
     response = urllib2.urlopen(request)
