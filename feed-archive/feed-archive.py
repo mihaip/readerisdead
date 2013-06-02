@@ -12,7 +12,7 @@ import urlparse
 import xml.etree.cElementTree as ET
 import Queue
 
-import log
+import base.log
 
 _BASE_PARAMETERS = {
   'client': 'reader-feed-archive'
@@ -29,7 +29,7 @@ ET.register_namespace('media', 'http://search.yahoo.com/mrss/')
 _READER_SHARED_TAG_FEED_URL_PATH_PREFIX = '/reader/public/atom/'
 
 def main():
-  log.init()
+  base.log.init()
   parser = argparse.ArgumentParser(
       description='Fetch archived feed data from Google Reader')
   # Which feeds to fetch data for
