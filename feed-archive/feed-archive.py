@@ -1,5 +1,4 @@
 import argparse
-import collections
 import datetime
 import logging
 import os
@@ -99,11 +98,11 @@ def main():
       failures.append(response.feed_url)
     response_queue.task_done()
 
-  logging.info("Fetched data for %d feeds", success_count)
+  logging.info('Fetched data for %d feeds', success_count)
   if failures:
-    logging.warning("Could not fetch %d feeds:", len(failures))
+    logging.warning('Could not fetch %d feeds:', len(failures))
     for feed_url in failures:
-      logging.warning("  %s", feed_url)
+      logging.warning('  %s', feed_url)
 
 
 class FeedFetchThread(threading.Thread):
@@ -149,7 +148,7 @@ class FeedFetchThread(threading.Thread):
               fetch(media_rss=False, hifi=False)
       except:
         logging.error(
-            "Exception when fetching %s", request.feed_url, exc_info=True)
+            'Exception when fetching %s', request.feed_url, exc_info=True)
         response.is_success = False
       finally:
         self._request_queue.task_done()
@@ -214,7 +213,7 @@ def get_stream_id(feed_url):
     # stream ID.
     if parsed.hostname.startswith('www.google.') and \
         parsed.path.startswith(_READER_SHARED_TAG_FEED_URL_PATH_PREFIX):
-      reader_url_prefix = "%s://%s%s" % (
+      reader_url_prefix = '%s://%s%s' % (
         parsed.scheme, parsed.hostname, _READER_SHARED_TAG_FEED_URL_PATH_PREFIX)
       return feed_url[len(reader_url_prefix):]
   except:
