@@ -34,11 +34,12 @@ def main():
 
   user_info = api.fetch_user_info()
   logging.info(
-    'Created API instance for %s (%s)', user_info.id, user_info.email)
+    'Created API instance for %s (%s)', user_info.user_id, user_info.email)
 
-  tag_helper = base.tag_helper.TagHelper(user_info.id)
+  tag_helper = base.tag_helper.TagHelper(user_info.user_id)
   stream_ids = set(tag_helper.system_tags())
-  stream_ids.update(api.fetch_tags())
+  stream_ids.update([tag.stream_id for tag in api.fetch_tags()])
+  stream_ids.update([sub.stream_id for sub in api.fetch_subscriptions()])
   logging.info('%d streams to fetch', len(stream_ids))
 
 def get_auth_token(account, password):
