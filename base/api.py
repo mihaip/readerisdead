@@ -64,14 +64,24 @@ class Api(object):
         photo_url=friend_json.get('photoUrl'),
         email_addresses=friend_json.get('emailAddresses', []),
 
-        is_current_user=flags & 1 << 0,
-        is_hidden=flags & 1 << 1,
-        is_new=flags & 1 << 2,
-        uses_reader=flags & 1 << 3,
-        is_follower=0 in types,
-        is_following=1 in types,
-        is_invite=2 in types,
-        is_contact=3 in types,
+        is_current_user= flags & 1 << 0 != 0,
+        is_hidden=       flags & 1 << 1 != 0,
+        is_new=          flags & 1 << 2 != 0,
+        uses_reader=     flags & 1 << 3 != 0,
+        is_blocked=      flags & 1 << 4 != 0,
+        has_profile=     flags & 1 << 5 != 0,
+        is_ignored=      flags & 1 << 6 != 0,
+        is_new_follower= flags & 1 << 7 != 0,
+        is_anonymous=    flags & 1 << 8 != 0,
+        has_shared_items=flags & 1 << 9 != 0,
+
+        is_follower=          0 in types,
+        is_following=         1 in types,
+        is_contact=           3 in types,
+        is_pending_following= 4 in types,
+        is_pending_follower=  5 in types,
+        is_allowed_following= 6 in types,
+        is_allowed_commenting=7 in types,
       ))
     return result
 
@@ -114,8 +124,24 @@ Friend = collections.namedtuple(
     'photo_url', 'email_addresses',
 
     # Flags
-    'is_current_user', 'is_hidden', 'is_new', 'uses_reader',
-    'is_follower', 'is_following', 'is_invite', 'is_contact',
+    'is_current_user', # Represents the requesting user.
+    'is_hidden', # User has hidden this person from the broadcast-friends stream.
+    'is_new', # Person is a new addition to the user's list of followed people.
+    'uses_reader', # Person uses reader
+    'is_blocked', # User has blocked this person.
+    'has_profile', #  Person has created a Google Profile
+    'is_ignored', # Person has requested to follow the user, but the user has ignored the request.
+    'is_new_follower', # Person has just begun to follow the user.
+    'is_anonymous', # Person doesn't have a display name set.
+    'has_shared_items', # Person has shared items in reader
+
+    'is_follower', # Person is following the user.
+    'is_following', # The user is following this person.
+    'is_contact', # This person is in the user's contacts list.
+    'is_pending_following', # The user is attempting to follow this person.
+    'is_pending_follower', # This person is attempting to follow this user.
+    'is_allowed_following', # The user is allowed to follow this person.
+    'is_allowed_commenting', # The user is allowed to comment on this person's shared items
   ])
 
 Website = collections.namedtuple('Website', ['title', 'url'])
