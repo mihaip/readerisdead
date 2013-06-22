@@ -70,6 +70,10 @@ def main():
   else:
     feed_urls = args.feed_urls
   init_base_parameters(args)
+  output_directory = args.output_directory
+  if output_directory != '-':
+    output_directory = base.paths.normalize(output_directory)
+    os.makedirs(output_directory)
 
   logging.info('Fetching archived data for %d feed%s',
       len(feed_urls), len(feed_urls) == 1 and '' or 's')
@@ -81,9 +85,8 @@ def main():
     thread.start()
 
   for feed_url in feed_urls:
-    if args.output_directory != '-':
-      output_path = get_output_path(
-          base.paths.normalize(args.output_directory), feed_url)
+    if output_directory != '-':
+      output_path = get_output_path(output_directory, feed_url)
     else:
       output_path = None
     request_queue.put(
