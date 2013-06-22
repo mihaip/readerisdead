@@ -40,7 +40,8 @@ def main():
   stream_ids = set(tag_helper.system_tags())
   stream_ids.update([tag.stream_id for tag in api.fetch_tags()])
   stream_ids.update([sub.stream_id for sub in api.fetch_subscriptions()])
-  stream_ids.update([f.stream_id for f in api.fetch_friends() if f.stream_id])
+  stream_ids.update([
+    f.stream_id for f in api.fetch_friends() if f.stream_id and f.is_following])
   logging.info('%d streams to fetch', len(stream_ids))
 
 def get_auth_token(account, password):

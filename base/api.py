@@ -1,5 +1,6 @@
 import collections
 import json
+import urllib
 import urllib2
 
 class Api(object):
@@ -40,7 +41,7 @@ class Api(object):
     return result
 
   def fetch_friends(self):
-    friends_json = self._fetch_json('GET', 'friend/list')
+    friends_json = self._fetch_json('GET', 'friend/list', {'lookup': 'ALL'})
     result = []
     for friend_json in friends_json['friends']:
       flags = friend_json.get("flags", 0)
@@ -74,9 +75,13 @@ class Api(object):
       ))
     return result
 
-  def _fetch_json(self, http_method, api_path):
+  def _fetch_json(self, http_method, api_path, query_params={}):
+    query_params = dict(query_params)
+    query_params['output'] = 'json'
+
     request = urllib2.Request(
-        'https://www.google.com/reader/api/0/%s?output=json' % api_path,
+        'https://www.google.com/reader/api/0/%s?%s' %
+          (api_path, urllib.urlencode(query_params)),
         headers=self._auth_headers())
     response = urllib2.urlopen(request)
     response_text = response.read()
