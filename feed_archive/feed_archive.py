@@ -12,6 +12,7 @@ import xml.etree.cElementTree as ET
 import Queue
 
 import base.log
+import base.paths
 
 _BASE_PARAMETERS = {
   'client': 'reader-feed-archive'
@@ -64,7 +65,8 @@ def main():
 
   args = parser.parse_args()
   if args.opml_file:
-    feed_urls = extract_feed_urls_from_opml_file(normalize_path(args.opml_file))
+    feed_urls = extract_feed_urls_from_opml_file(
+      base.paths.normalize(args.opml_file))
   else:
     feed_urls = args.feed_urls
   init_base_parameters(args)
@@ -81,7 +83,7 @@ def main():
   for feed_url in feed_urls:
     if args.output_directory != '-':
       output_path = get_output_path(
-          normalize_path(args.output_directory), feed_url)
+          base.paths.normalize(args.output_directory), feed_url)
     else:
       output_path = None
     request_queue.put(
@@ -185,26 +187,9 @@ def init_base_parameters(args):
   if args.newest_item_timestamp_sec:
     _BASE_PARAMETERS['nt'] = args.newest_item_timestamp_sec
 
-_generated_file_names = {}
 def get_output_path(base_path, feed_url):
-  file_name = feed_url
-  if file_name.startswith('http://'):
-    file_name = file_name[7:]
-  if file_name.startswith('https://'):
-    file_name = file_name[8:]
-  for c in [os.sep, '/', ':', '?', '&']:
-    file_name = file_name.replace(c, '-')
-  if len(file_name) > 64:
-    file_name = file_name[:64]
-  if file_name in _generated_file_names:
-    _generated_file_names[file_name] += 1
-    file_name += '-%d' % _generated_file_names[file_name]
-  else:
-    _generated_file_names[file_name] = 0
+  file_name = base.paths.url_to_file_name(feed_url)
   return os.path.join(base_path, file_name)
-
-def normalize_path(path):
-  return os.path.abspath(os.path.expanduser(path))
 
 def get_stream_id(feed_url):
   try:
