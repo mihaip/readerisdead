@@ -184,22 +184,22 @@ class FetchItemBodiesWorker(base.worker.Worker):
           # feeds (it causes an exception to be thrown), so we retry with
           # MediaRSS turned off before giving up.
           if e.code == 500:
-            logging.warn('500 response when fetching items, retrying with '
+            logging.warn('  500 response when fetching items, retrying with '
                 'MediaRSS turned off')
             return fetch(media_rss=False)
           else:
-            logging.error('HTTP exception when fetching items', exc_info=True)
+            logging.error('  HTTP exception when fetching items', exc_info=True)
             return None
         except ET.ParseError, e:
-            logging.warn('XML parse error when fetching items, retrying with '
+            logging.warn('  XML parse error when fetching items, retrying with '
                 'MediaRSS turned off')
             return fetch(media_rss=False)
       except ET.ParseError, e:
-            logging.warn('XML parse error when fetching items, retrying with '
+            logging.warn('  XML parse error when fetching items, retrying with '
                 'MediaRSS and high-fidelity turned off')
             return fetch(media_rss=False, hifi=False)
     except:
-      logging.error('Exception when fetching items', exc_info=True)
+      logging.error('  Exception when fetching items', exc_info=True)
       return None
 
 if __name__ == '__main__':

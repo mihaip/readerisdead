@@ -7,6 +7,8 @@ import urllib2
 import base.cache
 import base.paths
 
+_ITEM_ID_ATOM_FORM_PREFIX = "tag:google.com,2005:reader/item/"
+
 class Api(object):
   def __init__(self, auth_token, cache_directory=None):
     self._auth_token = auth_token
@@ -99,9 +101,7 @@ class Api(object):
     result = []
     for item_ref_json in item_refs_json['itemRefs']:
       result.append(ItemRef(
-        # TOOD: it probably makes sense to convert the signed base 10 ID to an
-        # unsigned base 16 one.
-        item_id=item_ref_json['id'],
+        item_id=item_id_from_decimal_form(item_ref_json['id']),
         timestamp_usec=int(item_ref_json['timestampUsec'])
       ))
     return result, item_refs_json.get('continuation')
@@ -111,7 +111,7 @@ class Api(object):
     query_params = {'output': format}
     if media_rss:
       query_params['mediaRss'] = 'true'
-    post_params = {'i': item_ids}
+    post_params = {'i': [i.decimal_form for i in item_ids]}
 
     result_text = self._fetch(
         'stream/items/contents',
@@ -119,8 +119,25 @@ class Api(object):
         post_params,
         authenticated=authenticated)
 
-    # TODO
-    return result_text
+    result = {}
+    if format.startswith('atom'):
+      feed = base.atom.parse(result_text)
+      for entry in feed.entries:
+        result[entry.item_id] = entry
+    else:
+      item_bodies_json = json.loads(result_text)
+      for item_body_json in item_bodies_json['items']:
+        # TODO: parse the JSON
+        item_id = item_id_from_atom_form(item_body_json['id'])
+        result[item_id] = item_body_json
+
+    for item_id in item_ids:
+      if item_id not in result:
+        logging.warning(
+            "Requested item id %s/%s, but it was not found in the result",
+            item_id.atom_form, item_id.decimal_form)
+
+    return result
 
   def _fetch_json(
       self,
@@ -224,3 +241,41 @@ Website = collections.namedtuple('Website', ['title', 'url'])
 UserInfo = collections.namedtuple('UserInfo', ['user_id', 'email'])
 
 ItemRef = collections.namedtuple('ItemRef', ['item_id', 'timestamp_usec'])
+
+# See https://code.google.com/p/google-reader-api/wiki/ItemId for the two forms
+# item IDs.
+ItemId = collections.namedtuple('ItemId', ['decimal_form', 'atom_form'])
+
+def item_id_from_decimal_form(decimal_form):
+  int_form = int(decimal_form)
+  if int_form < 0:
+    int_form += 1 << 64
+  hex_form = hex(int_form)[2:]
+  if hex_form.endswith('L'):
+    hex_form = hex_form[:-1]
+  atom_form = _ITEM_ID_ATOM_FORM_PREFIX + (16 - len(hex_form)) * '0' + hex_form
+  return ItemId(decimal_form=decimal_form, atom_form=atom_form)
+
+def item_id_from_atom_form(atom_form):
+  hex_form = atom_form[len(_ITEM_ID_ATOM_FORM_PREFIX):]
+  int_form = int(hex_form, 16)
+  if int_form > 1 << 63:
+    decimal_form = str(int_form - (1 << 64))
+  else:
+    decimal_form = str(int_form)
+  return ItemId(decimal_form=decimal_form, atom_form=atom_form)
+
+_TEST_DATA = [
+  ("tag:google.com,2005:reader/item/5d0cfa30041d4348", "6705009029382226760"),
+  ("tag:google.com,2005:reader/item/024025978b5e50d2", "162170919393841362"),
+  ("tag:google.com,2005:reader/item/fb115bd6d34a8e9f", "-355401917359550817"),
+]
+
+def _test_ids():
+  for atom_form, decimal_form in _TEST_DATA:
+    item_id = item_id_from_decimal_form(decimal_form)
+    assert item_id.atom_form == atom_form, \
+        "%s != %s" % (item_id.atom_form, atom_form)
+    item_id = item_id_from_atom_form(atom_form)
+    assert item_id.decimal_form == decimal_form, \
+        "%s != %s" % (item_id.decimal_form, decimal_form)
