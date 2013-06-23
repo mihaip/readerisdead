@@ -8,6 +8,7 @@ import urllib2
 import urlparse
 import xml.etree.cElementTree as ET
 
+import base.atom
 import base.log
 import base.paths
 import base.worker
@@ -16,18 +17,12 @@ _BASE_PARAMETERS = {
   'client': 'reader-feed-archive'
 }
 
-_ATOM_NS = 'http://www.w3.org/2005/Atom'
-_READER_NS = 'http://www.google.com/schemas/reader/atom/'
-
-ET.register_namespace('gr', _READER_NS)
-ET.register_namespace('atom', _ATOM_NS)
-ET.register_namespace('idx', 'urn:atom-extension:indexing')
-ET.register_namespace('media', 'http://search.yahoo.com/mrss/')
-
 _READER_SHARED_TAG_FEED_URL_PATH_PREFIX = '/reader/public/atom/'
 
 def main():
   base.log.init()
+  base.atom.init()
+
   parser = argparse.ArgumentParser(
       description='Fetch archived feed data from Google Reader')
   # Which feeds to fetch data for
@@ -213,11 +208,11 @@ def fetch_feed(feed_url, max_items, output_path, media_rss=True, hifi=True):
     response = urllib2.urlopen(request)
     response_tree = ET.parse(response)
     response_root = response_tree.getroot()
-    entries = response_root.findall('{%s}entry' % _ATOM_NS)
+    entries = response_root.findall('{%s}entry' % base.atom.ATOM_NS)
     oldest_message = ''
     if entries:
       last_crawl_timestamp_msec = \
-          entries[-1].attrib['{%s}crawl-timestamp-msec' % _READER_NS]
+          entries[-1].attrib['{%s}crawl-timestamp-msec' % base.atom.READER_NS]
       last_crawl_timestamp = datetime.datetime.utcfromtimestamp(
           float(last_crawl_timestamp_msec)/1000)
       oldest_message = ' (oldest is from %s)' % last_crawl_timestamp
@@ -232,7 +227,7 @@ def fetch_feed(feed_url, max_items, output_path, media_rss=True, hifi=True):
       break
 
     continuation_element = response_root.find(
-        '{%s}continuation' % _READER_NS)
+        '{%s}continuation' % base.atom.READER_NS)
     if continuation_element is not None:
       # TODO: explain
       response_root.remove(continuation_element)

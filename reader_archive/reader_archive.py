@@ -9,12 +9,14 @@ import sys
 import xml.etree.cElementTree as ET
 
 import base.api
+import base.atom
 import base.log
 import base.tag_helper
 import base.worker
 
 def main():
   base.log.init()
+  base.atom.init()
 
   parser = argparse.ArgumentParser(
       description='Comprehensive archive of a Google Reader account')
