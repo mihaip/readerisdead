@@ -37,6 +37,9 @@ def main():
   parser.add_argument('--item_bodies_chunk_size', type=int, default=250,
                       help='Number of items refs per request for fetching their '
                            'bodies (higher is more efficient)')
+  parser.add_argument('--max_streams', type=int, default=0,
+                      help='Maxmium number of streams to archive (0 for no'
+                           'limit, only mean to be used for development)')
   parser.add_argument('--parallelism', type=int, default=10,
                       help='Number of requests to make in parallel.')
 
@@ -60,6 +63,8 @@ def main():
 
   logging.info('Gathering streams to fetch')
   stream_ids = _get_stream_ids(api, user_info.user_id)
+  if args.max_streams and len(stream_ids) > args.max_streams:
+    stream_ids = stream_ids[:args.max_streams]
   logging.info('%d streams to fetch, gathering item refs:', len(stream_ids))
 
   item_refs_responses = base.worker.do_work(
