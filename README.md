@@ -2,6 +2,28 @@
 
 A collection of tools to help with the [impending Google Reader shutdown](http://googlereader.blogspot.com/2013/03/powering-down-google-reader.html).
 
+## reader_archive
+
+_Comprehensive archive of a Google Reader account._
+
+Unlike Google Reader's [Takeout support](http://googlesystem.blogspot.com/2012/11/export-google-reader-data-in-google.html), provides a complete archive of a Reader account's data. This includes:
+
+* Every read item
+* Every starred item
+* Every tagged item
+* Every shared item (from you and your friends)
+* Every item you've kept unread, emailed, read on your phone, clicked on or otherwise [interacted](http://googlesystem.blogspot.com/2008/03/explore-your-interactions-with-google.html) with.
+* Every item that has appeared in one of your subscriptions
+
+To use it:
+
+```
+bin/reader_archive \
+    --output_directory=~/Downloads/reader_archive
+```
+
+You will be prompted for the Google Account username and password (OAuth support is coming soon)
+
 ## feed_archive
 
 _Saves public feed data from Google Reader's feed archive._
@@ -31,25 +53,3 @@ bin/feed_archive \
 ```
 
 The tool supports additional arguments for controlling how many items are fetched, see `bin/feed_archive --help` for more information.
-
-## reader_archive
-
-_Comprehensive archive of a Google Reader account._
-
-Unlike Google Reader's [Takeout support](http://googlesystem.blogspot.com/2012/11/export-google-reader-data-in-google.html), provides a complete archive of a Reader account's data. This includes:
-
-* Every read item
-* Every starred item
-* Every tagged item
-* Every shared item (from you and your friends)
-* Every item you've kept unread, emailed, read on your phone, clicked on or otherwise [interacted](http://googlesystem.blogspot.com/2008/03/explore-your-interactions-with-google.html) with.
-* Every item that has appeared in one of your subscriptions
-
-To use it:
-
-```
-bin/reader_archive \
-    --output_directory=~/Downloads/reader_archive
-```
-
-You will be prompted for the Google Account username and password (OAuth support is coming soon)
