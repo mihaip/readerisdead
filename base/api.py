@@ -3,9 +3,14 @@ import json
 import urllib
 import urllib2
 
+import base.cache
+import base.paths
+
 class Api(object):
-  def __init__(self, auth_token):
+  def __init__(self, auth_token, cache_directory=None):
     self._auth_token = auth_token
+    self._cache = \
+      base.cache.DirectoryCache(cache_directory) if cache_directory else None
 
   def fetch_user_info(self):
     user_info_json = self._fetch_json('GET', 'user-info')
@@ -88,14 +93,23 @@ class Api(object):
   def _fetch_json(self, http_method, api_path, query_params={}):
     query_params = dict(query_params)
     query_params['output'] = 'json'
+    url = 'https://www.google.com/reader/api/0/%s' % api_path
+
+    if self._cache:
+      cache_key = base.paths.url_to_file_name(url, query_params)
+      cache_value = self._cache.get(cache_key)
+      if cache_value:
+        return json.loads(cache_value)
 
     request = urllib2.Request(
-        'https://www.google.com/reader/api/0/%s?%s' %
-          (api_path, urllib.urlencode(query_params)),
+        '%s?%s' %
+          (url, urllib.urlencode(query_params)),
         headers=self._auth_headers())
     response = urllib2.urlopen(request)
     response_text = response.read()
     response.close()
+    if self._cache:
+      self._cache.set(cache_key, response_text)
     return json.loads(response_text)
 
   def _auth_headers(self):

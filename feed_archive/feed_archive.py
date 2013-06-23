@@ -1,7 +1,6 @@
 import argparse
 import datetime
 import logging
-import os
 import os.path
 import sys
 import threading
@@ -73,7 +72,7 @@ def main():
   output_directory = args.output_directory
   if output_directory != '-':
     output_directory = base.paths.normalize(output_directory)
-    os.makedirs(output_directory)
+    base.paths.ensure_exists(output_directory)
 
   logging.info('Fetching archived data for %d feed%s',
       len(feed_urls), len(feed_urls) == 1 and '' or 's')

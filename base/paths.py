@@ -3,6 +3,11 @@ import hashlib
 import os.path
 import re
 
+def ensure_exists(directory_path):
+  if os.path.exists(directory_path):
+    return
+  os.makedirs(directory_path)
+
 def normalize(path):
   return os.path.abspath(os.path.expanduser(path))
 

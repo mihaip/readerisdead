@@ -1,6 +1,7 @@
 import argparse
 import getpass
 import logging
+import os.path
 import urllib
 import urllib2
 import sys
@@ -22,7 +23,17 @@ def main():
   parser.add_argument('--password', default='',
                       help='Password for the account. Omit to specify via '
                           'standard input')
+
+  # Output options
+  parser.add_argument('--output_directory', default='./',
+                      help='Directory where to place archive data.')
+
   args = parser.parse_args()
+
+
+  output_directory = base.paths.normalize(args.output_directory)
+  base.paths.ensure_exists(output_directory)
+  api_responses_directory = os.path.join(output_directory, '_raw_data')
 
   auth_token = get_auth_token(args.account, args.password)
 
@@ -30,7 +41,7 @@ def main():
     logging.error('Could not fetch authentication token.')
     sys.exit(1)
 
-  api = base.api.Api(auth_token)
+  api = base.api.Api(auth_token, cache_directory=api_responses_directory)
 
   user_info = api.fetch_user_info()
   logging.info(
