@@ -28,14 +28,18 @@ def main():
   parser.add_argument('--output_directory', default='./',
                       help='Directory where to place archive data.')
 
-  args = parser.parse_args()
+  # Fetching options
+  parser.add_argument('--stream_items_chunk_size', type=int, default=1000,
+                      help='Number of items refs to request per stream items '
+                           'API call (higher is more efficient)')
 
+  args = parser.parse_args()
 
   output_directory = base.paths.normalize(args.output_directory)
   base.paths.ensure_exists(output_directory)
   api_responses_directory = os.path.join(output_directory, '_raw_data')
 
-  auth_token = get_auth_token(args.account, args.password)
+  auth_token = _get_auth_token(args.account, args.password)
 
   if not auth_token:
     logging.error('Could not fetch authentication token.')
@@ -47,15 +51,15 @@ def main():
   logging.info(
     'Created API instance for %s (%s)', user_info.user_id, user_info.email)
 
-  tag_helper = base.tag_helper.TagHelper(user_info.user_id)
-  stream_ids = set(tag_helper.system_tags())
-  stream_ids.update([tag.stream_id for tag in api.fetch_tags()])
-  stream_ids.update([sub.stream_id for sub in api.fetch_subscriptions()])
-  stream_ids.update([
-    f.stream_id for f in api.fetch_friends() if f.stream_id and f.is_following])
-  logging.info('%d streams to fetch', len(stream_ids))
+  logging.info('Gathering streams to fetch')
+  stream_ids = _get_stream_ids(api, user_info.user_id)
+  logging.info('%d streams to fetch, gathering item refs.', len(stream_ids))
+  for stream_id in stream_ids:
+    item_refs = _get_stream_item_refs(
+        api, stream_id, args.stream_items_chunk_size)
+    logging.info('Got %d items refs from %s', len(item_refs), stream_id)
 
-def get_auth_token(account, password):
+def _get_auth_token(account, password):
   account = account or raw_input('Google Account username: ')
   password = password or getpass.getpass('Password: ')
   credentials_data = urllib.urlencode({
@@ -81,6 +85,29 @@ def get_auth_token(account, password):
   auth_response.close()
   assert auth_token
   return auth_token
+
+def _get_stream_ids(api, user_id):
+  tag_helper = base.tag_helper.TagHelper(user_id)
+  stream_ids = set(tag_helper.system_tags())
+  stream_ids.update([tag.stream_id for tag in api.fetch_tags()])
+  stream_ids.update([sub.stream_id for sub in api.fetch_subscriptions()])
+  stream_ids.update([
+    f.stream_id for f in api.fetch_friends() if f.stream_id and f.is_following])
+  return stream_ids
+
+def _get_stream_item_refs(api, stream_id, chunk_size):
+  result = []
+  continuation_token = None
+  while True:
+    item_refs, continuation_token = api.fetch_item_refs(
+        stream_id,
+        count=chunk_size,
+        continuation_token=continuation_token)
+    result.extend(item_refs)
+    if not continuation_token:
+      break
+
+  return result
 
 if __name__ == '__main__':
     main()

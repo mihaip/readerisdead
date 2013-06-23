@@ -1,5 +1,6 @@
 import collections
 import json
+import logging
 import urllib
 import urllib2
 
@@ -39,7 +40,7 @@ class Api(object):
         stream_id=subscription_json['id'],
         sort_id=subscription_json['sortid'],
         title=subscription_json.get('title'),
-        first_item_usec=subscription_json.get('firstitemmsec', 0),
+        first_item_usec=int(subscription_json.get('firstitemmsec', 0)) * 1000,
         html_url=subscription_json.get('htmlUrl'),
         insert_stream_ids=insert_stream_ids,
       ))
@@ -49,8 +50,8 @@ class Api(object):
     friends_json = self._fetch_json('GET', 'friend/list', {'lookup': 'ALL'})
     result = []
     for friend_json in friends_json['friends']:
-      flags = friend_json.get("flags", 0)
-      types = friend_json.get("types", [])
+      flags = friend_json.get('flags', 0)
+      types = friend_json.get('types', [])
       websites=[
         Website(w['title'], w['url']) for w in friend_json.get('websites', [])]
       result.append(Friend(
@@ -90,6 +91,21 @@ class Api(object):
       ))
     return result
 
+  def fetch_item_refs(self, stream_id, count=10, continuation_token=None):
+    query_params = {'s': stream_id, 'n': count}
+    if continuation_token:
+      query_params['c'] = continuation_token
+    item_refs_json = self._fetch_json('GET', 'stream/items/ids', query_params)
+    result = []
+    for item_ref_json in item_refs_json['itemRefs']:
+      result.append(ItemRef(
+        # TOOD: it probably makes sense to convert the signed base 10 ID to an
+        # unsigned base 16 one.
+        item_id=item_ref_json['id'],
+        timestamp_usec=int(item_ref_json['timestampUsec'])
+      ))
+    return result, item_refs_json.get('continuation')
+
   def _fetch_json(self, http_method, api_path, query_params={}):
     query_params = dict(query_params)
     query_params['output'] = 'json'
@@ -101,11 +117,18 @@ class Api(object):
       if cache_value:
         return json.loads(cache_value)
 
+    request_url = '%s?%s' % (url, urllib.urlencode(query_params))
     request = urllib2.Request(
-        '%s?%s' %
-          (url, urllib.urlencode(query_params)),
+        request_url,
         headers=self._auth_headers())
-    response = urllib2.urlopen(request)
+    try:
+      response = urllib2.urlopen(request)
+    except urllib2.HTTPError, e:
+      logging.error(
+        "HTTP status %d when requesting %s. Error response body:\n%s",
+        e.code, request_url, e.read())
+      raise
+
     response_text = response.read()
     response.close()
     if self._cache:
@@ -161,3 +184,5 @@ Friend = collections.namedtuple(
 Website = collections.namedtuple('Website', ['title', 'url'])
 
 UserInfo = collections.namedtuple('UserInfo', ['user_id', 'email'])
+
+ItemRef = collections.namedtuple('ItemRef', ['item_id', 'timestamp_usec'])
