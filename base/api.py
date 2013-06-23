@@ -159,9 +159,12 @@ class Api(object):
           request,
           data=urlencode(post_params) if post_params else None)
     except urllib2.HTTPError, e:
-      logging.error(
-        "HTTP status %d when requesting %s. Error response body:\n%s",
-        e.code, request_url, e.read())
+      if e.code >= 400 and e.code < 500:
+        # Log 400s, since they're usually programmer error, and the response
+        # indicates how to fix it.
+        logging.error(
+            "HTTP status %d when requesting %s. Error response body:\n%s",
+            e.code, request_url, e.read())
       raise
 
     response_text = response.read()
