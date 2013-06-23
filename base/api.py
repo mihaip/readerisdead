@@ -99,7 +99,10 @@ class Api(object):
     query_params = {'s': stream_id, 'n': count}
     if continuation_token:
       query_params['c'] = continuation_token
-    item_refs_json = self._fetch_json('stream/items/ids', query_params)
+    item_refs_json = self._fetch_json(
+        'stream/items/ids',
+        query_params,
+        authenticated=not stream_id.startswith(FEED_STREAM_ID_PREFIX))
     result = []
     for item_ref_json in item_refs_json['itemRefs']:
       result.append(ItemRef(
