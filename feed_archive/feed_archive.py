@@ -3,15 +3,14 @@ import datetime
 import logging
 import os.path
 import sys
-import threading
 import urllib
 import urllib2
 import urlparse
 import xml.etree.cElementTree as ET
-import Queue
 
 import base.log
 import base.paths
+import base.worker
 
 _BASE_PARAMETERS = {
   'client': 'reader-feed-archive'
@@ -60,7 +59,7 @@ def main():
                            'newest item that should be returned (0 for no '
                            'timestamp restriction)')
   parser.add_argument('--parallelism', type=int, default=10,
-                      help='number of feeds to fetch in parallel.')
+                      help='Number of feeds to fetch in parallel.')
 
   args = parser.parse_args()
   if args.opml_file:
@@ -77,30 +76,26 @@ def main():
   logging.info('Fetching archived data for %d feed%s',
       len(feed_urls), len(feed_urls) == 1 and '' or 's')
 
-  request_queue = Queue.Queue()
-  response_queue = Queue.Queue()
-  for i in xrange(args.parallelism):
-    thread = FeedFetchThread(request_queue, response_queue)
-    thread.start()
-
+  feed_fetch_requests = []
   for feed_url in feed_urls:
     if output_directory != '-':
       output_path = get_output_path(output_directory, feed_url)
     else:
       output_path = None
-    request_queue.put(
+    feed_fetch_requests.append(
       FeedFetchRequest(feed_url, args.max_items, output_path))
+
+  feed_fetch_responses = \
+    base.worker.do_work(FeedFetchWorker, feed_fetch_requests, args.parallelism)
 
   success_count = 0
   failures = []
 
-  for i in xrange(len(feed_urls)):
-    response = response_queue.get()
+  for response in feed_fetch_responses:
     if response.is_success:
       success_count += 1
     else:
       failures.append(response.feed_url)
-    response_queue.task_done()
 
   logging.info('Fetched data for %d feeds', success_count)
   if failures:
@@ -108,55 +103,45 @@ def main():
     for feed_url in failures:
       logging.warning('  %s', feed_url)
 
+class FeedFetchWorker(base.worker.Worker):
+  def work(self, request):
+    response = FeedFetchResponse(request.feed_url, is_success=True)
+    def fetch(media_rss=True, hifi=True):
+      fetch_feed(
+          request.feed_url,
+          request.max_items,
+          request.output_path,
+          media_rss=media_rss,
+          hifi=hifi)
 
-class FeedFetchThread(threading.Thread):
-  def __init__(self, request_queue, response_queue):
-    threading.Thread.__init__(self)
-    self._request_queue = request_queue
-    self._response_queue = response_queue
-    self.daemon = True
-
-  def run(self):
-    while True:
-      request = self._request_queue.get()
-      response = FeedFetchResponse(request.feed_url, is_success=True)
-      def fetch(media_rss=True, hifi=True):
-        fetch_feed(
-            request.feed_url,
-            request.max_items,
-            request.output_path,
-            media_rss=media_rss,
-            hifi=hifi)
-
+    try:
       try:
         try:
-          try:
-            fetch()
-          except urllib2.HTTPError, e:
-            # Reader's MediaRSS reconstruction code appears to have a bug for
-            # some feeds (it causes an exception to be thrown), so we retry with
-            # MediaRSS turned off before giving up.
-            if e.code == 500:
-              logging.warn(('500 response when fetching %s, '
-                'retrying with MediaRSS turned off') % request.feed_url)
-              fetch(media_rss=False)
-            else:
-              response.is_success = False
-          except ET.ParseError, e:
-              logging.warn(('XML parse error when fetching %s, '
-                'retrying with MediaRSS turned off') % request.feed_url)
-              fetch(media_rss=False)
+          fetch()
+        except urllib2.HTTPError, e:
+          # Reader's MediaRSS reconstruction code appears to have a bug for some
+          # feeds (it causes an exception to be thrown), so we retry with
+          # MediaRSS turned off before giving up.
+          if e.code == 500:
+            logging.warn(('500 response when fetching %s, '
+              'retrying with MediaRSS turned off') % request.feed_url)
+            fetch(media_rss=False)
+          else:
+            response.is_success = False
         except ET.ParseError, e:
-              logging.warn(('XML parse error when fetching %s, retrying with '
-                  'MediaRSS and high-fidelity turned off') % request.feed_url)
-              fetch(media_rss=False, hifi=False)
-      except:
-        logging.error(
-            'Exception when fetching %s', request.feed_url, exc_info=True)
-        response.is_success = False
-      finally:
-        self._request_queue.task_done()
-        self._response_queue.put(response)
+            logging.warn(('XML parse error when fetching %s, '
+              'retrying with MediaRSS turned off') % request.feed_url)
+            fetch(media_rss=False)
+      except ET.ParseError, e:
+            logging.warn(('XML parse error when fetching %s, retrying with '
+                'MediaRSS and high-fidelity turned off') % request.feed_url)
+            fetch(media_rss=False, hifi=False)
+    except:
+      logging.error(
+          'Exception when fetching %s', request.feed_url, exc_info=True)
+      response.is_success = False
+    finally:
+      return response
 
 class FeedFetchRequest(object):
   def __init__(self, feed_url, max_items, output_path):
