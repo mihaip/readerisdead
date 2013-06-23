@@ -172,11 +172,10 @@ class FetchItemBodiesWorker(base.worker.Worker):
     self._api = api
 
   def work(self, item_ids):
-    def fetch(media_rss=True, hifi=True):
+    def fetch(hifi=True):
       result = self._api.fetch_item_bodies(
               item_ids,
               format='atom-hifi' if hifi else 'atom',
-              media_rss=media_rss,
               # Turn off authentication in order to make the request cheaper/
               # faster. Item bodies are not ACLed, we already have per-user tags
               # via the stream item ref fetches, and will be fetching comments
@@ -187,27 +186,19 @@ class FetchItemBodiesWorker(base.worker.Worker):
 
     try:
       try:
-        try:
-          return fetch()
-        except urllib2.HTTPError, e:
-          # Reader's MediaRSS reconstruction code appears to have a bug for some
-          # feeds (it causes an exception to be thrown), so we retry with
-          # MediaRSS turned off before giving up.
-          if e.code == 500:
-            logging.warn('  500 response when fetching items, retrying with '
-                'MediaRSS turned off')
-            return fetch(media_rss=False)
-          else:
-            logging.error('  HTTP exception when fetching items', exc_info=True)
-            return None
-        except ET.ParseError, e:
-            logging.warn('  XML parse error when fetching items, retrying with '
-                'MediaRSS turned off')
-            return fetch(media_rss=False)
+        return fetch()
+      except urllib2.HTTPError, e:
+        if e.code == 500:
+          logging.warn('  500 response when fetching items, retrying with '
+              'high-fidelity output turned off')
+          return fetch(hifi=False)
+        else:
+          logging.error('  HTTP exception when fetching items', exc_info=True)
+          return None
       except ET.ParseError, e:
-            logging.warn('  XML parse error when fetching items, retrying with '
-                'MediaRSS and high-fidelity turned off')
-            return fetch(media_rss=False, hifi=False)
+          logging.warn('  XML parse error when fetching items, retrying with '
+              'high-fidelity turned off')
+          return fetch(hifi=False)
     except:
       logging.error('  Exception when fetching items', exc_info=True)
       return None
