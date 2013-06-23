@@ -1,3 +1,4 @@
+import logging
 import threading
 import Queue
 
@@ -34,6 +35,10 @@ class WorkerThread(threading.Thread):
   def run(self):
     while True:
       request, request_index = self._request_queue.get()
-      response = self._worker.work(request)
+      try:
+        response = self._worker.work(request)
+      except:
+        logging.error('Exception when running worker', exc_info=True)
+        response = None
       self._request_queue.task_done()
       self._response_queue.put((response, request_index))

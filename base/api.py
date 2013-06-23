@@ -14,13 +14,13 @@ class Api(object):
       base.cache.DirectoryCache(cache_directory) if cache_directory else None
 
   def fetch_user_info(self):
-    user_info_json = self._fetch_json('GET', 'user-info')
+    user_info_json = self._fetch_json('user-info')
     return UserInfo(
       user_id=user_info_json['userId'],
       email=user_info_json['userEmail'])
 
   def fetch_tags(self):
-    tags_json = self._fetch_json('GET', 'tag/list')
+    tags_json = self._fetch_json('tag/list')
     result = []
     for tag_json in tags_json['tags']:
       result.append(Tag(
@@ -30,7 +30,7 @@ class Api(object):
     return result
 
   def fetch_subscriptions(self):
-    subscriptions_json = self._fetch_json('GET', 'subscription/list')
+    subscriptions_json = self._fetch_json('subscription/list')
     result = []
     for subscription_json in subscriptions_json['subscriptions']:
       insert_stream_ids = []
@@ -47,7 +47,7 @@ class Api(object):
     return result
 
   def fetch_friends(self):
-    friends_json = self._fetch_json('GET', 'friend/list', {'lookup': 'ALL'})
+    friends_json = self._fetch_json('friend/list', {'lookup': 'ALL'})
     result = []
     for friend_json in friends_json['friends']:
       flags = friend_json.get('flags', 0)
@@ -95,7 +95,7 @@ class Api(object):
     query_params = {'s': stream_id, 'n': count}
     if continuation_token:
       query_params['c'] = continuation_token
-    item_refs_json = self._fetch_json('GET', 'stream/items/ids', query_params)
+    item_refs_json = self._fetch_json('stream/items/ids', query_params)
     result = []
     for item_ref_json in item_refs_json['itemRefs']:
       result.append(ItemRef(
@@ -106,23 +106,58 @@ class Api(object):
       ))
     return result, item_refs_json.get('continuation')
 
-  def _fetch_json(self, http_method, api_path, query_params={}):
+  def fetch_item_bodies(
+      self, item_ids, format='json', media_rss=False, authenticated=True):
+    query_params = {'output': format}
+    if media_rss:
+      query_params['mediaRss'] = 'true'
+    post_params = {'i': item_ids}
+
+    result_text = self._fetch(
+        'stream/items/contents',
+        query_params,
+        post_params,
+        authenticated=authenticated)
+
+    # TODO
+    return result_text
+
+  def _fetch_json(
+      self,
+      api_path,
+      query_params={},
+      post_params={},
+      authenticated=True):
     query_params = dict(query_params)
     query_params['output'] = 'json'
+    response_text = self._fetch(
+        api_path, query_params, post_params, authenticated)
+    return json.loads(response_text)
+
+  def _fetch(self,
+      api_path,
+      query_params={},
+      post_params={},
+      authenticated=True):
     url = 'https://www.google.com/reader/api/0/%s' % api_path
 
     if self._cache:
-      cache_key = base.paths.url_to_file_name(url, query_params)
+      cache_key = base.paths.url_to_file_name(url, query_params, post_params)
       cache_value = self._cache.get(cache_key)
       if cache_value:
-        return json.loads(cache_value)
+        return cache_value
 
-    request_url = '%s?%s' % (url, urllib.urlencode(query_params))
+    def urlencode(params):
+      return urllib.urlencode(params, doseq=True)
+
+    request_url = '%s?%s' % (url, urlencode(query_params))
     request = urllib2.Request(
         request_url,
-        headers=self._auth_headers())
+        headers=self._auth_headers() if authenticated else {})
     try:
-      response = urllib2.urlopen(request)
+      response = urllib2.urlopen(
+          request,
+          data=urlencode(post_params) if post_params else None)
     except urllib2.HTTPError, e:
       logging.error(
         "HTTP status %d when requesting %s. Error response body:\n%s",
@@ -133,7 +168,7 @@ class Api(object):
     response.close()
     if self._cache:
       self._cache.set(cache_key, response_text)
-    return json.loads(response_text)
+    return response_text
 
   def _auth_headers(self):
     return {'Authorization': 'GoogleLogin auth=%s' % self._auth_token}

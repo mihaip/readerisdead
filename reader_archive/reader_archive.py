@@ -68,7 +68,7 @@ def main():
   logging.info('%d streams to fetch, gathering item refs:', len(stream_ids))
 
   item_refs_responses = base.worker.do_work(
-      lambda: FeedItemRefsWorker(api, args.stream_items_chunk_size),
+      lambda: FetchItemRefsWorker(api, args.stream_items_chunk_size),
       stream_ids,
       args.parallelism)
 
@@ -83,6 +83,17 @@ def main():
   item_ids = list(item_ids)
   logging.info('%d unique items refs (%d total), getting item bodies:',
       len(item_ids), item_refs_total)
+
+  item_ids_chunks = []
+  while item_ids:
+    item_ids_chunks.append(item_ids[:args.item_bodies_chunk_size])
+    item_ids = item_ids[args.item_bodies_chunk_size:]
+
+  item_bodies_chunks = base.worker.do_work(
+    lambda: FetchItemBodiesWorker(api),
+    item_ids_chunks,
+    args.parallelism)
+
 
 def _get_auth_token(account, password):
   account = account or raw_input('Google Account username: ')
@@ -124,7 +135,7 @@ def _get_stream_ids(api, user_id):
   stream_ids.sort(reverse=True)
   return stream_ids
 
-class FeedItemRefsWorker(base.worker.Worker):
+class FetchItemRefsWorker(base.worker.Worker):
   def __init__(self, api, chunk_size):
     self._api = api
     self._chunk_size = chunk_size
@@ -142,6 +153,22 @@ class FeedItemRefsWorker(base.worker.Worker):
       if not continuation_token:
         break
     return result
+
+class FetchItemBodiesWorker(base.worker.Worker):
+  def __init__(self, api):
+    self._api = api
+
+  def work(self, item_ids):
+    logging.info("Fetching %d items", len(item_ids))
+    return self._api.fetch_item_bodies(
+        item_ids,
+        format='atom-hifi',
+        media_rss=True,
+        # Turn off authentication in order to make the request cheaper/faster.
+        # Item bodies are not ACLed, we already have per-user tags via the stream
+        # item ref fetches, and will be fetching comments for shared items
+        # separately.
+        authenticated=False)
 
 if __name__ == '__main__':
     main()
