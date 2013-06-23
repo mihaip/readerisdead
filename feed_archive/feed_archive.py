@@ -118,18 +118,18 @@ class FeedFetchWorker(base.worker.Worker):
           # feeds (it causes an exception to be thrown), so we retry with
           # MediaRSS turned off before giving up.
           if e.code == 500:
-            logging.warn(('500 response when fetching %s, '
-              'retrying with MediaRSS turned off') % request.feed_url)
+            logging.warn('500 response when fetching %s, '
+              'retrying with MediaRSS turned off', request.feed_url)
             fetch(media_rss=False)
           else:
             response.is_success = False
         except ET.ParseError, e:
-            logging.warn(('XML parse error when fetching %s, '
-              'retrying with MediaRSS turned off') % request.feed_url)
+            logging.warn('XML parse error when fetching %s, '
+              'retrying with MediaRSS turned off', request.feed_url)
             fetch(media_rss=False)
       except ET.ParseError, e:
-            logging.warn(('XML parse error when fetching %s, retrying with '
-                'MediaRSS and high-fidelity turned off') % request.feed_url)
+            logging.warn('XML parse error when fetching %s, retrying with '
+                'MediaRSS and high-fidelity turned off', request.feed_url)
             fetch(media_rss=False, hifi=False)
     except:
       logging.error(
