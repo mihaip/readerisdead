@@ -4,7 +4,7 @@ A collection of tools to help with the [impending Google Reader shutdown](http:/
 
 ## feed_archive
 
-_Saves feed data from Google Reader's feed archive._
+_Saves public feed data from Google Reader's feed archive._
 
 Google Reader has (for the most part) a copy of all blog posts and other feed items published since its launch in late 2005 (assuming that at least one Reader user subscribed to the feed). This makes it an invaluable resource for sites [that](http://whytheluckystiff.net/) [disappear](http://www.diveintomark.org/), can serve as a [backup mechanism](http://wordpress.org/support/topic/whole-tables-gone-missing-from-db-hacked#post-1326219) and enables [tools](http://www.streamspigot.com/feed-playback/) to be created.
 
@@ -31,3 +31,25 @@ bin/feed_archive \
 ```
 
 The tool supports additional arguments for controlling how many items are fetched, see `bin/feed_archive --help` for more information.
+
+## reader_archive
+
+_Comprehensive archive of a Google Reader account._
+
+Unlike Google Reader's [Takeout support](http://googlesystem.blogspot.com/2012/11/export-google-reader-data-in-google.html), provides a complete archive of a Reader account's data. This includes:
+
+* Every read item
+* Every starred item
+* Every tagged item
+* Every shared item (from you and your friends)
+* Every item you've kept unread, emailed, read on your phone, clicked on or otherwise [interacted](http://googlesystem.blogspot.com/2008/03/explore-your-interactions-with-google.html) with.
+* Every item that has appeared in one of your subscriptions
+
+To use it:
+
+```
+bin/reader_archive \
+    --output_directory=~/Downloads/reader_archive
+```
+
+You will be prompted for the Google Account username and password (OAuth support is coming soon)

@@ -16,7 +16,7 @@ def main():
   base.log.init()
 
   parser = argparse.ArgumentParser(
-      description='Comprehensive archive a Google Reader account')
+      description='Comprehensive archive of a Google Reader account')
 
   # Credentials
   parser.add_argument('--account', default='',
