@@ -3,6 +3,8 @@ import hashlib
 import os.path
 import re
 
+import base.api
+
 def ensure_exists(directory_path):
   if os.path.exists(directory_path):
     return
@@ -14,7 +16,7 @@ def normalize(path):
 _ESCAPE_CHARACTERS_RE = re.compile(r'([/:?&]+|%20)')
 _TRIM_TRAILING_DASHES_RE = re.compile(r'-+$')
 
-def url_to_file_name(url, query_params={}, post_params={}):
+def url_to_file_name(url, query_params=None, post_params=None):
   file_name = url
   if file_name.startswith('http://'):
     file_name = file_name[7:]
@@ -40,5 +42,17 @@ def url_to_file_name(url, query_params={}, post_params={}):
     file_name += '-' + signature
 
   return file_name
+
+def stream_id_to_file_name(stream_id):
+  if stream_id.startswith(base.api.FEED_STREAM_ID_PREFIX):
+    feed_url = stream_id[len(base.api.FEED_STREAM_ID_PREFIX):]
+    if "?" in feed_url:
+      feed_url, query_params = feed_url.split("?", 1)
+    else:
+      query_params = None
+    return "%s-%s" % (url_to_file_name(base.api.FEED_STREAM_ID_PREFIX),
+      url_to_file_name(feed_url, query_params))
+
+  return url_to_file_name(stream_id)
 
 

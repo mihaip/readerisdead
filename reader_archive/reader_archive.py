@@ -1,6 +1,7 @@
 import argparse
 import getpass
 import itertools
+import json
 import logging
 import os.path
 import urllib
@@ -51,6 +52,8 @@ def main():
   output_directory = base.paths.normalize(args.output_directory)
   base.paths.ensure_exists(output_directory)
   api_responses_directory = os.path.join(output_directory, '_raw_data')
+  streams_directory = os.path.join(output_directory, 'streams')
+  base.paths.ensure_exists(streams_directory)
 
   auth_token = _get_auth_token(args.account, args.password)
 
@@ -83,6 +86,13 @@ def main():
     logging.info('  %d item refs from %s', len(item_refs), stream_id)
     item_ids.update([item_ref.item_id for item_ref in item_refs])
     item_refs_total += len(item_refs)
+
+    stream = base.api.Stream(stream_id=stream_id, item_refs=item_refs)
+    stream_file_name = base.paths.stream_id_to_file_name(stream_id)
+    stream_file_path = os.path.join(streams_directory, stream_file_name)
+    with open(stream_file_path, 'w') as stream_file:
+      stream_file.write(json.dumps(stream.to_json()))
+
   item_ids = list(item_ids)
   logging.info('%d unique items refs (%d total), getting item bodies:',
       len(item_ids), item_refs_total)

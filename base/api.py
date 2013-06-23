@@ -7,6 +7,8 @@ import urllib2
 import base.cache
 import base.paths
 
+FEED_STREAM_ID_PREFIX = "feed/"
+
 _ITEM_ID_ATOM_FORM_PREFIX = "tag:google.com,2005:reader/item/"
 
 class Api(object):
@@ -240,11 +242,28 @@ Website = collections.namedtuple('Website', ['title', 'url'])
 
 UserInfo = collections.namedtuple('UserInfo', ['user_id', 'email'])
 
-ItemRef = collections.namedtuple('ItemRef', ['item_id', 'timestamp_usec'])
+class ItemRef(collections.namedtuple('ItemRef', ['item_id', 'timestamp_usec'])):
+  def to_json(self):
+    return {
+      "item_id": self.item_id.to_json(),
+      "timestamp_usec": self.timestamp_usec,
+    }
+
+class Stream(collections.namedtuple('Stream', ['stream_id', 'item_refs'])):
+  def to_json(self):
+    return {
+      "stream_id": self.stream_id,
+      "item_refs": {
+        item_ref.item_id.to_json() : item_ref.timestamp_usec
+            for item_ref in self.item_refs
+      },
+    }
 
 # See https://code.google.com/p/google-reader-api/wiki/ItemId for the two forms
 # item IDs.
-ItemId = collections.namedtuple('ItemId', ['decimal_form', 'atom_form'])
+class ItemId(collections.namedtuple('ItemId', ['decimal_form', 'atom_form'])):
+  def to_json(self):
+    return self.atom_form[len(_ITEM_ID_ATOM_FORM_PREFIX):]
 
 def item_id_from_decimal_form(decimal_form):
   int_form = int(decimal_form)
