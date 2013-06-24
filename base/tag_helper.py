@@ -1,3 +1,5 @@
+import base.api
+
 class TagHelper(object):
   def __init__(self, user_id):
     self._user_id = user_id
@@ -39,5 +41,7 @@ class TagHelper(object):
     return self._user_tag(type, 'com.google', name)
 
   def _user_tag(self, *args):
-    return 'user/%s/%s' % (self._user_id, '/'.join(args))
+    return base.api.Tag(
+        stream_id='user/%s/%s' % (self._user_id, '/'.join(args)),
+        sort_id=None)
 

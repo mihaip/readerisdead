@@ -54,6 +54,8 @@ def main():
   api_responses_directory = os.path.join(output_directory, '_raw_data')
   streams_directory = os.path.join(output_directory, 'streams')
   base.paths.ensure_exists(streams_directory)
+  data_directory = os.path.join(output_directory, 'data')
+  base.paths.ensure_exists(data_directory)
 
   auth_token = _get_auth_token(args.account, args.password)
 
@@ -68,7 +70,7 @@ def main():
     'Created API instance for %s (%s)', user_info.user_id, user_info.email)
 
   logging.info('Gathering streams to fetch')
-  stream_ids = _get_stream_ids(api, user_info.user_id)
+  stream_ids = _get_stream_ids(api, user_info.user_id, data_directory)
   if args.max_streams and len(stream_ids) > args.max_streams:
     stream_ids = stream_ids[:args.max_streams]
   logging.info('%d streams to fetch, gathering item refs:', len(stream_ids))
@@ -93,7 +95,7 @@ def main():
     item_refs_total += len(item_refs)
 
     stream = base.api.Stream(stream_id=stream_id, item_refs=item_refs)
-    stream_file_name = base.paths.stream_id_to_file_name(stream_id)
+    stream_file_name = base.paths.stream_id_to_file_name(stream_id) + ".json"
     stream_file_path = os.path.join(streams_directory, stream_file_name)
     with open(stream_file_path, 'w') as stream_file:
       stream_file.write(json.dumps(stream.to_json()))
@@ -150,13 +152,32 @@ def _get_auth_token(account, password):
   assert auth_token
   return auth_token
 
-def _get_stream_ids(api, user_id):
-  tag_helper = base.tag_helper.TagHelper(user_id)
-  stream_ids = set(tag_helper.system_tags())
-  stream_ids.update([tag.stream_id for tag in api.fetch_tags()])
-  stream_ids.update([sub.stream_id for sub in api.fetch_subscriptions()])
+def _get_stream_ids(api, user_id, data_directory):
+  def save_items(items, file_name):
+    file_path = os.path.join(data_directory, file_name)
+    with open(file_path, "w") as file:
+      file.write(json.dumps([i.to_json() for i in items]))
+
+  stream_ids = set()
+
+  tags = api.fetch_tags()
+  tag_stream_ids = set([t.stream_id for t in tags])
+  for system_tag in base.tag_helper.TagHelper(user_id).system_tags():
+    if system_tag.stream_id not in tag_stream_ids:
+      tags.append(system_tag)
+      tag_stream_ids.add(system_tag.stream_id)
+  stream_ids.update([tag.stream_id for tag in tags])
+  save_items(tags, "tags.json")
+
+  subscriptions = api.fetch_subscriptions()
+  stream_ids.update([sub.stream_id for sub in subscriptions])
+  save_items(subscriptions, "subscriptions.json");
+
+  friends = api.fetch_friends()
   stream_ids.update([
-    f.stream_id for f in api.fetch_friends() if f.stream_id and f.is_following])
+      f.stream_id for f in friends if f.stream_id and f.is_following])
+  save_items(friends, "friends.json");
+
   stream_ids = list(stream_ids)
   # Start the fetch with user streams, since those tend to have more items and
   # are thus the long pole.

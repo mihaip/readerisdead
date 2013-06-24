@@ -198,50 +198,58 @@ class Api(object):
   def _auth_headers(self):
     return {'Authorization': 'GoogleLogin auth=%s' % self._auth_token}
 
-Tag = collections.namedtuple(
-  'Tag',
-  ['stream_id', 'sort_id'])
+class Tag(collections.namedtuple('Tag', ['stream_id', 'sort_id'])):
+  def to_json(self):
+    return self._asdict()
 
-Subscription = collections.namedtuple(
-  'Subscription',
-  ['stream_id', 'title', 'sort_id', 'first_item_usec', 'html_url',
-  'insert_stream_ids'])
+class Subscription(collections.namedtuple(
+    'Subscription',
+    ['stream_id', 'title', 'sort_id', 'first_item_usec', 'html_url',
+    'insert_stream_ids'])):
+  def to_json(self):
+    return self._asdict()
 
-Friend = collections.namedtuple(
-  'Friend',
-  [
-    # Shared items stream
-    'stream_id',
+class Friend(collections.namedtuple(
+    'Friend',
+    [
+      # Shared items stream
+      'stream_id',
 
-    # Ids
-    'user_ids', 'profile_ids', 'contact_id', 'group_ids',
+      # Ids
+      'user_ids', 'profile_ids', 'contact_id', 'group_ids',
 
-    # Profile data
-    'display_name', 'given_name', 'occupation', 'websites', 'location',
-    'photo_url', 'email_addresses',
+      # Profile data
+      'display_name', 'given_name', 'occupation', 'websites', 'location',
+      'photo_url', 'email_addresses',
 
-    # Flags
-    'is_current_user', # Represents the requesting user.
-    'is_hidden', # User has hidden this person from the broadcast-friends stream.
-    'is_new', # Person is a new addition to the user's list of followed people.
-    'uses_reader', # Person uses reader
-    'is_blocked', # User has blocked this person.
-    'has_profile', #  Person has created a Google Profile
-    'is_ignored', # Person has requested to follow the user, but the user has ignored the request.
-    'is_new_follower', # Person has just begun to follow the user.
-    'is_anonymous', # Person doesn't have a display name set.
-    'has_shared_items', # Person has shared items in reader
+      # Flags
+      'is_current_user', # Represents the requesting user.
+      'is_hidden', # User has hidden this person from the broadcast-friends stream.
+      'is_new', # Person is a new addition to the user's list of followed people.
+      'uses_reader', # Person uses reader
+      'is_blocked', # User has blocked this person.
+      'has_profile', #  Person has created a Google Profile
+      'is_ignored', # Person has requested to follow the user, but the user has ignored the request.
+      'is_new_follower', # Person has just begun to follow the user.
+      'is_anonymous', # Person doesn't have a display name set.
+      'has_shared_items', # Person has shared items in reader
 
-    'is_follower', # Person is following the user.
-    'is_following', # The user is following this person.
-    'is_contact', # This person is in the user's contacts list.
-    'is_pending_following', # The user is attempting to follow this person.
-    'is_pending_follower', # This person is attempting to follow this user.
-    'is_allowed_following', # The user is allowed to follow this person.
-    'is_allowed_commenting', # The user is allowed to comment on this person's shared items
-  ])
+      'is_follower', # Person is following the user.
+      'is_following', # The user is following this person.
+      'is_contact', # This person is in the user's contacts list.
+      'is_pending_following', # The user is attempting to follow this person.
+      'is_pending_follower', # This person is attempting to follow this user.
+      'is_allowed_following', # The user is allowed to follow this person.
+      'is_allowed_commenting', # The user is allowed to comment on this person's shared items
+    ])):
+  def to_json(self):
+    result = self._asdict()
+    result['websites'] = [w.to_json() for w in self.websites]
+    return result
 
-Website = collections.namedtuple('Website', ['title', 'url'])
+class Website(collections.namedtuple('Website', ['title', 'url'])):
+  def to_json(self):
+    return self._asdict()
 
 UserInfo = collections.namedtuple('UserInfo', ['user_id', 'email'])
 
