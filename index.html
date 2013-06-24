@@ -4,57 +4,103 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <title>Reader is Dead by mihaip</title>
-
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <script src="javascripts/scale.fix.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/main.js"></script>
     <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
   </head>
   <body>
-    <div class="wrapper">
+
       <header>
-        <h1 class="header">Reader is Dead</h1>
-        <p class="header"></p>
-
-        <ul>
-          <li class="download"><a class="buttons" href="https://github.com/mihaip/readerisdead/zipball/master">Download ZIP</a></li>
-          <li class="download"><a class="buttons" href="https://github.com/mihaip/readerisdead/tarball/master">Download TAR</a></li>
-          <li><a class="buttons github" href="https://github.com/mihaip/readerisdead">View On GitHub</a></li>
-        </ul>
-
-        <p class="header">This project is maintained by <a class="header name" href="https://github.com/mihaip">mihaip</a></p>
-
-
-      </header>
-      <section>
         <h1>Reader is Dead</h1>
+        <p></p>
+      </header>
 
-<p>TODO</p>
+      <div id="banner">
+        <span id="logo"></span>
 
-<h2>Tools</h2>
+        <a href="https://github.com/mihaip/readerisdead" class="button fork"><strong>View On GitHub</strong></a>
+        <div class="downloads">
+          <span>Downloads:</span>
+          <ul>
+            <li><a href="https://github.com/mihaip/readerisdead/zipball/master" class="button">ZIP</a></li>
+            <li><a href="https://github.com/mihaip/readerisdead/tarball/master" class="button">TAR</a></li>
+          </ul>
+        </div>
+      </div><!-- end banner -->
 
-<p>TODO</p>
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
+      <section>
+        <h1>
+<a name="readerisdeadcom" class="anchor" href="#readerisdeadcom"><span class="octicon octicon-link"></span></a>readerisdead.com</h1>
 
-<h3>Feed Archive</h3>
+<p>A collection of tools to help with the <a href="http://googlereader.blogspot.com/2013/03/powering-down-google-reader.html">impending Google Reader shutdown</a>.</p>
 
-<p>TODO</p>
+<h2>
+<a name="reader_archive" class="anchor" href="#reader_archive"><span class="octicon octicon-link"></span></a>reader_archive</h2>
 
-<h3>Other Tools</h3>
+<p><em>Comprehensive archive of a Google Reader account.</em></p>
 
-<p>TODO</p>
+<p>Unlike Google Reader's <a href="http://googlesystem.blogspot.com/2012/11/export-google-reader-data-in-google.html">Takeout support</a>, provides a complete archive of a Reader account's data. This includes:</p>
 
-<h2>Replacements</h2>
+<ul>
+<li>Every read item</li>
+<li>Every starred item</li>
+<li>Every tagged item</li>
+<li>Every shared item (from you and your friends)</li>
+<li>Every item you've kept unread, emailed, read on your phone, clicked on or otherwise <a href="http://googlesystem.blogspot.com/2008/03/explore-your-interactions-with-google.html">interacted</a> with.</li>
+<li>Every item that has appeared in one of your subscriptions</li>
+</ul><p>To use it:</p>
 
-<p>TODO</p>
+<pre><code>bin/reader_archive \
+    --output_directory=~/Downloads/reader_archive
+</code></pre>
+
+<p>You will be prompted for the Google Account username and password (OAuth support is coming soon)</p>
+
+<h2>
+<a name="feed_archive" class="anchor" href="#feed_archive"><span class="octicon octicon-link"></span></a>feed_archive</h2>
+
+<p><em>Saves public feed data from Google Reader's feed archive.</em></p>
+
+<p>Google Reader has (for the most part) a copy of all blog posts and other feed items published since its launch in late 2005 (assuming that at least one Reader user subscribed to the feed). This makes it an invaluable resource for sites <a href="http://whytheluckystiff.net/">that</a> <a href="http://www.diveintomark.org/">disappear</a>, can serve as a <a href="http://wordpress.org/support/topic/whole-tables-gone-missing-from-db-hacked#post-1326219">backup mechanism</a> and enables <a href="http://www.streamspigot.com/feed-playback/">tools</a> to be created.</p>
+
+<p>Presumably access do this data is also going away come July 2013, and thus this tool can be used to get one last shot at archiving feeds you might want to refer to later.</p>
+
+<p>The easiest way to use it is get the <a href="http://www.google.com/reader/subscriptions/export">OPML file</a> with all your Reader subscriptions, and run it like so:</p>
+
+<pre><code>bin/feed_archive \
+    --opml_file=~/Downloads/feeds.opml \
+    --output_directory=~/Downloads/feed_archive
+</code></pre>
+
+<p>The destination specified by <code>--output_directory</code> will be populated with one file per feed, named after its URL. The file contains all items that Reader ever saw in that feed, in the <a href="http://www.ietf.org/rfc/rfc4287">Atom</a> format. Google Reader normally omits unknown (namespaced) elements in its API output, but in the script makes an attempt to use <a href="https://groups.google.com/forum/?fromgroups#!topic/fougrapi/Rab23a9jhzc">high-fidelity mode</a> to reconstruct the original data as much as possible.</p>
+
+<p>If you have specific feeds you'd like to save the archive for, instead of <code>--opml_file</code> you can also pass in feed URLs as command line arguments:</p>
+
+<pre><code>bin/feed_archive \
+    --output_directory=~/Downloads/feed_archive \
+    http://googlereader.blogspot.com/atom.xml \
+    http://persistent.info/atom.xml \
+    ...
+</code></pre>
+
+<p>The tool supports additional arguments for controlling how many items are fetched, see <code>bin/feed_archive --help</code> for more information.</p>
       </section>
       <footer>
-        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+        <p>Project maintained by <a href="https://github.com/mihaip">mihaip</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
       </footer>
     </div>
     <!--[if !IE]><script>fixScale(document);</script><![endif]-->
-		
+    
   </body>
 </html>
