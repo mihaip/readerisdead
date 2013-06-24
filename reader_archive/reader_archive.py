@@ -73,17 +73,22 @@ def main():
     stream_ids = stream_ids[:args.max_streams]
   logging.info('%d streams to fetch, gathering item refs:', len(stream_ids))
 
+  fetched_stream_ids = [0]
+  def report_item_refs_progress(stream_id, item_refs):
+    fetched_stream_ids[0] += 1
+    logging.info("  Loaded %s item refs from %s, %d streams left.",
+        "{:,}".format(len(item_refs)),
+        stream_id,
+        len(stream_ids) - fetched_stream_ids[0])
   item_refs_responses = base.worker.do_work(
       lambda: FetchItemRefsWorker(api, args.stream_items_chunk_size),
       stream_ids,
-      args.parallelism)
-
-  logging.info('Gathered item refs:')
+      args.parallelism,
+      report_progress=report_item_refs_progress)
 
   item_ids = set()
   item_refs_total = 0
   for stream_id, item_refs in itertools.izip(stream_ids, item_refs_responses):
-    logging.info('  %d item refs from %s', len(item_refs), stream_id)
     item_ids.update([item_ref.item_id for item_ref in item_refs])
     item_refs_total += len(item_refs)
 
@@ -97,15 +102,25 @@ def main():
   logging.info('%d unique items refs (%d total), getting item bodies:',
       len(item_ids), item_refs_total)
 
+  item_bodies_to_fetch = len(item_ids)
+  fetched_item_bodies = [0]
+
   item_ids_chunks = []
   while item_ids:
     item_ids_chunks.append(item_ids[:args.item_bodies_chunk_size])
     item_ids = item_ids[args.item_bodies_chunk_size:]
 
+  def report_item_bodies_progress(item_ids_chunk, item_bodies):
+    if item_bodies:
+      fetched_item_bodies[0] += len(item_bodies)
+      logging.info("  Fetched %s/%s item bodies",
+          "{:,}".format(fetched_item_bodies[0]),
+          "{:,}".format(item_bodies_to_fetch))
   item_bodies_chunks = base.worker.do_work(
-    lambda: FetchItemBodiesWorker(api),
-    item_ids_chunks,
-    args.parallelism)
+      lambda: FetchItemBodiesWorker(api),
+      item_ids_chunks,
+      args.parallelism,
+      report_progress=report_item_bodies_progress)
 
 
 def _get_auth_token(account, password):
@@ -161,7 +176,6 @@ class FetchItemRefsWorker(base.worker.Worker):
           stream_id,
           count=self._chunk_size,
           continuation_token=continuation_token)
-      logging.info('  Loaded %d item refs from %s', len(item_refs), stream_id)
       result.extend(item_refs)
       if not continuation_token:
         break
@@ -181,7 +195,6 @@ class FetchItemBodiesWorker(base.worker.Worker):
               # via the stream item ref fetches, and will be fetching comments
               # for shared items separately.
               authenticated=False)
-      logging.info("  Fetched %d items", len(result))
       return result
 
     try:

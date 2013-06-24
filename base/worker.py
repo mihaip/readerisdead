@@ -2,7 +2,7 @@ import logging
 import threading
 import Queue
 
-def do_work(worker_creator, requests, parallelism):
+def do_work(worker_creator, requests, parallelism, report_progress=None):
   request_queue = Queue.Queue()
   response_queue = Queue.Queue()
   for i in xrange(parallelism):
@@ -17,6 +17,8 @@ def do_work(worker_creator, requests, parallelism):
     response, request_index = response_queue.get()
     responses[request_index] = response
     response_queue.task_done()
+    if report_progress:
+      report_progress(requests[request_index], response)
 
   return responses
 
