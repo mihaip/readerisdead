@@ -22,9 +22,9 @@ def parse(xml_text):
   for entry_element in entry_elements:
     item_id = base.api.item_id_from_atom_form(
         entry_element.find('{%s}id' % ATOM_NS).text)
-    entries.append(Entry(item_id=item_id))
+    entries.append(Entry(item_id=item_id, element=entry_element))
   return Feed(entries=entries)
 
 Feed = collections.namedtuple('Feed', ['entries'])
 
-Entry = collections.namedtuple('Entry', ['item_id'])
+Entry = collections.namedtuple('Entry', ['item_id', 'element'])

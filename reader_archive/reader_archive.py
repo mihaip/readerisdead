@@ -56,6 +56,8 @@ def main():
   base.paths.ensure_exists(streams_directory)
   data_directory = os.path.join(output_directory, 'data')
   base.paths.ensure_exists(data_directory)
+  items_directory = os.path.join(output_directory, 'items')
+  base.paths.ensure_exists(items_directory)
 
   auth_token = _get_auth_token(args.account, args.password)
 
@@ -124,6 +126,25 @@ def main():
       args.parallelism,
       report_progress=report_item_bodies_progress)
 
+  written_item_bodies = 0
+  logging.info('Writing item bodies:')
+  for item_body_chunk in item_bodies_chunks:
+    for entry in item_body_chunk.values():
+      item_file_name = entry.item_id.compact_form()
+      # Keep number of files per directory reasonable.
+      item_directory = os.path.join(
+        items_directory, item_file_name[0:2], item_file_name[2:4])
+      base.paths.ensure_exists(item_directory)
+      item_file_path = os.path.join(item_directory, item_file_name)
+      with open(item_file_path, 'w') as item_file:
+        ET.ElementTree(entry.element).write(
+            item_file,
+            xml_declaration=True,
+            encoding='utf-8')
+    written_item_bodies += len(item_body_chunk)
+    logging.info("  Wrote %s/%s item bodies",
+        "{:,}".format(written_item_bodies),
+        "{:,}".format(item_bodies_to_fetch))
 
 def _get_auth_token(account, password):
   account = account or raw_input('Google Account username: ')

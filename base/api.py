@@ -274,6 +274,9 @@ class Stream(collections.namedtuple('Stream', ['stream_id', 'item_refs'])):
 # item IDs.
 class ItemId(collections.namedtuple('ItemId', ['decimal_form', 'atom_form'])):
   def to_json(self):
+    return self.compact_form()
+
+  def compact_form(self):
     return self.atom_form[len(_ITEM_ID_ATOM_FORM_PREFIX):]
 
 def item_id_from_decimal_form(decimal_form):
