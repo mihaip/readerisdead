@@ -30,7 +30,7 @@ _Saves public feed data from Google Reader's feed archive._
 
 Google Reader has (for the most part) a copy of all blog posts and other feed items published since its launch in late 2005 (assuming that at least one Reader user subscribed to the feed). This makes it an invaluable resource for sites [that](http://whytheluckystiff.net/) [disappear](http://www.diveintomark.org/), can serve as a [backup mechanism](http://wordpress.org/support/topic/whole-tables-gone-missing-from-db-hacked#post-1326219) and enables [tools](http://www.streamspigot.com/feed-playback/) to be created.
 
-Presumably access do this data is also going away come July 2013, and thus this tool can be used to get one last shot at archiving feeds you might want to refer to later.
+Presumably access to this data is also going away come July 2013, and thus this tool can be used to get one last shot at archiving feeds you might want to refer to later.
 
 The easiest way to use it is get the [OPML file](http://www.google.com/reader/subscriptions/export) with all your Reader subscriptions, and run it like so:
 
