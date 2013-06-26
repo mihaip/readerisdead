@@ -56,3 +56,8 @@ def stream_id_to_file_name(stream_id):
   return url_to_file_name(stream_id)
 
 
+def item_id_to_file_path(items_directory, item_id):
+  item_file_name = item_id.compact_form()
+  # Keep number of files per directory reasonable.
+  return os.path.join(
+      items_directory, item_file_name[0:2], item_file_name[2:4])

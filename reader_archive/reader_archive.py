@@ -106,45 +106,46 @@ def main():
   logging.info('%d unique items refs (%d total), getting item bodies:',
       len(item_ids), item_refs_total)
 
+  # We have two different chunking goals:
+  # - Fetch items in large-ish chunks (ideally 250), to minimize HTTP request
+  #   overhead per item
+  # - Write items in small-ish chunks (ideally around 10) per file, since having
+  #   a file per item is too annoying to deal with from a file-system
+  #   perspective. We also need the chunking into files to be deterministic, so
+  #   that from an item ID we know what file to look for it in.
+  # We therefore first chunk the IDs by file path, and then group those chunks
+  # into ID chunks that we fetch.
+  # We write the file chunks immediately after fetching to decrease the
+  # in-memory working set of the script.
+  item_ids_by_path = {}
+  for item_id in item_ids:
+    item_id_file_path = base.paths.item_id_to_file_path(
+        items_directory, item_id)
+    item_ids_by_path.setdefault(item_id_file_path, list()).append(item_id)
+
+  current_item_ids_chunk = []
+  item_ids_chunks = [current_item_ids_chunk]
+  for item_ids_for_file_path in item_ids_by_path.values():
+    if len(current_item_ids_chunk) + len(item_ids_for_file_path) > \
+          args.item_bodies_chunk_size:
+      current_item_ids_chunk = []
+      item_ids_chunks.append(current_item_ids_chunk)
+    current_item_ids_chunk.extend(item_ids_for_file_path)
+
   item_bodies_to_fetch = len(item_ids)
   fetched_item_bodies = [0]
-
-  item_ids_chunks = []
-  while item_ids:
-    item_ids_chunks.append(item_ids[:args.item_bodies_chunk_size])
-    item_ids = item_ids[args.item_bodies_chunk_size:]
-
-  def report_item_bodies_progress(item_ids_chunk, item_bodies):
-    if item_bodies:
-      fetched_item_bodies[0] += len(item_bodies)
-      logging.info("  Fetched %s/%s item bodies",
-          "{:,}".format(fetched_item_bodies[0]),
-          "{:,}".format(item_bodies_to_fetch))
+  def report_item_bodies_progress(_, count):
+    if count is None:
+      return
+    fetched_item_bodies[0] += count
+    logging.info("  Fetched %s/%s item bodies",
+        "{:,}".format(fetched_item_bodies[0]),
+        "{:,}".format(item_bodies_to_fetch))
   item_bodies_chunks = base.worker.do_work(
-      lambda: FetchItemBodiesWorker(api),
+      lambda: FetchWriteItemBodiesWorker(api, items_directory),
       item_ids_chunks,
       args.parallelism,
       report_progress=report_item_bodies_progress)
-
-  written_item_bodies = 0
-  logging.info('Writing item bodies:')
-  for item_body_chunk in item_bodies_chunks:
-    for entry in item_body_chunk.values():
-      item_file_name = entry.item_id.compact_form()
-      # Keep number of files per directory reasonable.
-      item_directory = os.path.join(
-        items_directory, item_file_name[0:2], item_file_name[2:4])
-      base.paths.ensure_exists(item_directory)
-      item_file_path = os.path.join(item_directory, item_file_name)
-      with open(item_file_path, 'w') as item_file:
-        ET.ElementTree(entry.element).write(
-            item_file,
-            xml_declaration=True,
-            encoding='utf-8')
-    written_item_bodies += len(item_body_chunk)
-    logging.info("  Wrote %s/%s item bodies",
-        "{:,}".format(written_item_bodies),
-        "{:,}".format(item_bodies_to_fetch))
 
 def _get_auth_token(account, password):
   account = account or raw_input('Google Account username: ')
@@ -223,11 +224,26 @@ class FetchItemRefsWorker(base.worker.Worker):
         break
     return result
 
-class FetchItemBodiesWorker(base.worker.Worker):
-  def __init__(self, api):
+class FetchWriteItemBodiesWorker(base.worker.Worker):
+  def __init__(self, api, items_directory):
     self._api = api
+    self._items_directory = items_directory
 
   def work(self, item_ids):
+    if not item_ids:
+      return 0
+
+    item_bodies_by_id = self._fetch_item_bodies(item_ids)
+    if not item_bodies_by_id:
+      return 0
+
+    item_bodies_by_file_path = self._group_item_bodies(
+      item_bodies_by_id.values())
+    for file_path, item_bodies in item_bodies_by_file_path.items():
+      self._write_item_bodies(file_path, item_bodies)
+    return len(item_bodies_by_id)
+
+  def _fetch_item_bodies(self, item_ids):
     def fetch(hifi=True):
       result = self._api.fetch_item_bodies(
               item_ids,
@@ -257,6 +273,26 @@ class FetchItemBodiesWorker(base.worker.Worker):
     except:
       logging.error('  Exception when fetching items', exc_info=True)
       return None
+
+  def _group_item_bodies(self, item_bodies):
+    item_bodies_by_path = {}
+    for entry in item_bodies:
+      item_id_file_path = base.paths.item_id_to_file_path(
+          self._items_directory, entry.item_id)
+      item_bodies_by_path.setdefault(item_id_file_path, list()).append(entry)
+    return item_bodies_by_path
+
+  def _write_item_bodies(self, file_path, item_bodies):
+    base.paths.ensure_exists(os.path.dirname(file_path))
+    feed_element = ET.Element('{%s}feed' % base.atom.ATOM_NS)
+    for entry in item_bodies:
+      feed_element.append(entry.element)
+
+    with open(file_path, 'w') as items_file:
+        ET.ElementTree(feed_element).write(
+            items_file,
+            xml_declaration=True,
+            encoding='utf-8')
 
 if __name__ == '__main__':
     main()
