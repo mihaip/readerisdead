@@ -95,6 +95,10 @@ class Api(object):
       ))
     return result
 
+  def fetch_encoded_sharers(self):
+    friends_json = self._fetch_json('friend/list', {'lookup': 'ALL'})
+    return friends_json['encodedSharersList']
+
   def fetch_item_refs(self, stream_id, count=10, continuation_token=None):
     query_params = {'s': stream_id, 'n': count}
     if continuation_token:
@@ -110,6 +114,41 @@ class Api(object):
         timestamp_usec=int(item_ref_json['timestampUsec'])
       ))
     return result, item_refs_json.get('continuation')
+
+  def fetch_comments(
+      self, stream_id, encoded_sharers, count=10, continuation_token=None):
+    query_params = {
+      'comments': 'true',
+      'sharers': encoded_sharers,
+      'n': count,
+    }
+    if continuation_token:
+      query_params['c'] = continuation_token
+    stream_contents_json = self._fetch_json(
+        'stream/contents/%s' % urllib.quote(stream_id),
+        query_params)
+    result = {}
+    for item_json in stream_contents_json['items']:
+      comments_json = item_json.get('comments', [])
+      if not comments_json:
+          continue
+      item_id = item_id_from_atom_form(item_json['id'])
+      comments = []
+      for comment_json in comments_json:
+        comments.append(Comment(
+          comment_id=comment_json['id'],
+          plain_content=comment_json['plainContent'],
+          html_content=comment_json['htmlContent'],
+          author_name=comment_json['author'],
+          author_user_id=comment_json['userId'],
+          author_profile_id=comment_json['profileId'],
+          venue_stream_id=comment_json['venueStreamId'],
+          created_time_usec=comment_json['createdTime'] * 1000000,
+          modified_time_usec=comment_json['modifiedTime'] * 1000000,
+          is_spam=comment_json['isSpam'],
+        ))
+      result[item_id] = comments
+    return result, stream_contents_json.get('continuation')
 
   def fetch_item_bodies(
       self, item_ids, format='json', media_rss=False, authenticated=True):
@@ -256,6 +295,23 @@ class Friend(collections.namedtuple(
     return result
 
 class Website(collections.namedtuple('Website', ['title', 'url'])):
+  def to_json(self):
+    return self._asdict()
+
+class Comment(collections.namedtuple(
+    'Comment',
+    [
+      'comment_id',
+      'plain_content',
+      'html_content',
+      'author_name',
+      'author_user_id',
+      'author_profile_id',
+      'venue_stream_id',
+      'created_time_usec',
+      'modified_time_usec',
+      'is_spam',
+    ])):
   def to_json(self):
     return self._asdict()
 

@@ -41,6 +41,9 @@ def main():
   parser.add_argument('--item_bodies_chunk_size', type=int, default=250,
                       help='Number of items refs per request for fetching their '
                            'bodies (higher is more efficient)')
+  parser.add_argument('--comments_chunk_size', type=int, default=250,
+                      help='Number of items per request for fetching comments '
+                           'on shared items (higher is more efficient)')
   parser.add_argument('--max_streams', type=int, default=0,
                       help='Maxmium number of streams to archive (0 for no'
                            'limit, only mean to be used for development)')
@@ -51,13 +54,15 @@ def main():
 
   output_directory = base.paths.normalize(args.output_directory)
   base.paths.ensure_exists(output_directory)
-  api_responses_directory = os.path.join(output_directory, '_raw_data')
-  streams_directory = os.path.join(output_directory, 'streams')
-  base.paths.ensure_exists(streams_directory)
-  data_directory = os.path.join(output_directory, 'data')
-  base.paths.ensure_exists(data_directory)
-  items_directory = os.path.join(output_directory, 'items')
-  base.paths.ensure_exists(items_directory)
+  def output_sub_directory(name):
+    directory_path = os.path.join(output_directory, name)
+    base.paths.ensure_exists(directory_path)
+    return directory_path
+  api_responses_directory = output_sub_directory('_raw_data')
+  streams_directory = output_sub_directory('streams')
+  data_directory = output_sub_directory('data')
+  items_directory = output_sub_directory('items')
+  comments_directory = output_sub_directory('comments')
 
   auth_token = _get_auth_token(args.account, args.password)
 
@@ -80,8 +85,8 @@ def main():
   fetched_stream_ids = [0]
   def report_item_refs_progress(stream_id, item_refs):
     fetched_stream_ids[0] += 1
-    logging.info("  Loaded %s item refs from %s, %d streams left.",
-        "{:,}".format(len(item_refs)),
+    logging.info('  Loaded %s item refs from %s, %d streams left.',
+        '{:,}'.format(len(item_refs)),
         stream_id,
         len(stream_ids) - fetched_stream_ids[0])
   item_refs_responses = base.worker.do_work(
@@ -97,7 +102,7 @@ def main():
     item_refs_total += len(item_refs)
 
     stream = base.api.Stream(stream_id=stream_id, item_refs=item_refs)
-    stream_file_name = base.paths.stream_id_to_file_name(stream_id) + ".json"
+    stream_file_name = base.paths.stream_id_to_file_name(stream_id) + '.json'
     stream_file_path = os.path.join(streams_directory, stream_file_name)
     with open(stream_file_path, 'w') as stream_file:
       stream_file.write(json.dumps(stream.to_json()))
@@ -138,14 +143,54 @@ def main():
     if count is None:
       return
     fetched_item_bodies[0] += count
-    logging.info("  Fetched %s/%s item bodies",
-        "{:,}".format(fetched_item_bodies[0]),
-        "{:,}".format(item_bodies_to_fetch))
-  item_bodies_chunks = base.worker.do_work(
+    logging.info('  Fetched %s/%s item bodies',
+        '{:,}'.format(fetched_item_bodies[0]),
+        '{:,}'.format(item_bodies_to_fetch))
+  base.worker.do_work(
       lambda: FetchWriteItemBodiesWorker(api, items_directory),
       item_ids_chunks,
       args.parallelism,
       report_progress=report_item_bodies_progress)
+
+  broadcast_stream_ids = [
+      stream_id for stream_id in stream_ids
+      if stream_id.startswith('user/') and
+          stream_id.endswith('/state/com.google/broadcast')
+  ]
+  logging.info(
+      'Fetching comments from %d shared item streams.',
+      len(broadcast_stream_ids))
+  encoded_sharers = api.fetch_encoded_sharers()
+  remaining_broadcast_stream_ids = [len(broadcast_stream_ids)]
+  def report_comments_progress(_, comments_by_item_id):
+    if comments_by_item_id is None:
+      return
+    remaining_broadcast_stream_ids[0] -= 1
+    logging.info('  Fetched %s comments, %s shared items streams left.',
+        '{:,}'.format(len(comments_by_item_id)),
+        '{:,}'.format(remaining_broadcast_stream_ids[0]))
+  all_comments = {}
+  comments_for_broadcast_streams = base.worker.do_work(
+      lambda: FetchCommentsWorker(
+          api, encoded_sharers, args.comments_chunk_size),
+      broadcast_stream_ids,
+      args.parallelism,
+      report_progress=report_comments_progress)
+  total_comment_count = 0
+  for comments_for_broadcast_stream in comments_for_broadcast_streams:
+    for item_id, comments in comments_for_broadcast_stream.items():
+      total_comment_count += len(comments)
+      all_comments.setdefault(item_id, list()).extend(comments)
+
+  logging.info('Writing %s comments from %s items.',
+      '{:,}'.format(total_comment_count),
+      '{:,}'.format(len(all_comments)))
+  for item_id, comments in all_comments.items():
+    item_comments_file_path = base.paths.item_id_to_file_path(
+        comments_directory, item_id)
+    base.paths.ensure_exists(os.path.dirname(item_comments_file_path))
+    with open(item_comments_file_path, 'w') as item_comments_file:
+      item_comments_file.write(json.dumps([c.to_json() for c in comments]))
 
 def _get_auth_token(account, password):
   account = account or raw_input('Google Account username: ')
@@ -177,7 +222,7 @@ def _get_auth_token(account, password):
 def _get_stream_ids(api, user_id, data_directory):
   def save_items(items, file_name):
     file_path = os.path.join(data_directory, file_name)
-    with open(file_path, "w") as file:
+    with open(file_path, 'w') as file:
       file.write(json.dumps([i.to_json() for i in items]))
 
   stream_ids = set()
@@ -189,16 +234,16 @@ def _get_stream_ids(api, user_id, data_directory):
       tags.append(system_tag)
       tag_stream_ids.add(system_tag.stream_id)
   stream_ids.update([tag.stream_id for tag in tags])
-  save_items(tags, "tags.json")
+  save_items(tags, 'tags.json')
 
   subscriptions = api.fetch_subscriptions()
   stream_ids.update([sub.stream_id for sub in subscriptions])
-  save_items(subscriptions, "subscriptions.json");
+  save_items(subscriptions, 'subscriptions.json');
 
   friends = api.fetch_friends()
   stream_ids.update([
       f.stream_id for f in friends if f.stream_id and f.is_following])
-  save_items(friends, "friends.json");
+  save_items(friends, 'friends.json');
 
   stream_ids = list(stream_ids)
   # Start the fetch with user streams, since those tend to have more items and
@@ -293,6 +338,26 @@ class FetchWriteItemBodiesWorker(base.worker.Worker):
             items_file,
             xml_declaration=True,
             encoding='utf-8')
+
+class FetchCommentsWorker(base.worker.Worker):
+  def __init__(self, api, encoded_sharers, chunk_size):
+    self._api = api
+    self._encoded_sharers = encoded_sharers
+    self._chunk_size = chunk_size
+
+  def work(self, broadcast_stream_id):
+    result = {}
+    continuation_token = None
+    while True:
+      comments_by_item_id, continuation_token = self._api.fetch_comments(
+          broadcast_stream_id,
+          encoded_sharers=self._encoded_sharers,
+          count=self._chunk_size,
+          continuation_token=continuation_token)
+      result.update(comments_by_item_id)
+      if not continuation_token:
+        break
+    return result
 
 if __name__ == '__main__':
     main()
