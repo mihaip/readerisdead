@@ -12,6 +12,7 @@ Unlike Google Reader's [Takeout support](http://googlesystem.blogspot.com/2012/1
 * Every starred item
 * Every tagged item
 * Every shared item (from you and your friends)
+* Every comment on every shared item
 * Every item you've kept unread, emailed, read on your phone, clicked on or otherwise [interacted](http://googlesystem.blogspot.com/2008/03/explore-your-interactions-with-google.html) with.
 * Every item that has appeared in one of your subscriptions
 
