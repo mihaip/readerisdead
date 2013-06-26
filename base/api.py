@@ -113,7 +113,12 @@ class Api(object):
 
   def fetch_item_bodies(
       self, item_ids, format='json', media_rss=False, authenticated=True):
-    query_params = {'output': format}
+    query_params = {
+        'output': format,
+        # Don't render annotations inline (so that the item body is left alone).
+        # Instead we'll parse them from the <gr:annotation> namespaced entry.
+        'ann': 'false'
+      }
     if media_rss:
       query_params['mediaRss'] = 'true'
     post_params = {'i': [i.decimal_form for i in item_ids]}
