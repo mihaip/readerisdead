@@ -190,7 +190,10 @@ def main():
         comments_directory, item_id)
     base.paths.ensure_exists(os.path.dirname(item_comments_file_path))
     with open(item_comments_file_path, 'w') as item_comments_file:
-      item_comments_file.write(json.dumps([c.to_json() for c in comments]))
+      item_comments_file.write(json.dumps({
+        "item_id": item_id.to_json(),
+        "comments": [c.to_json() for c in comments]
+      }))
 
 def _get_auth_token(account, password):
   account = account or raw_input('Google Account username: ')
