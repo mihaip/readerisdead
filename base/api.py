@@ -117,7 +117,10 @@ class Api(object):
         'output': format,
         # Don't render annotations inline (so that the item body is left alone).
         # Instead we'll parse them from the <gr:annotation> namespaced entry.
-        'ann': 'false'
+        'ann': 'false',
+        # Likes are public data, and thus work even if we don't use
+        # authentication.
+        'likes': 'true',
       }
     if media_rss:
       query_params['mediaRss'] = 'true'
