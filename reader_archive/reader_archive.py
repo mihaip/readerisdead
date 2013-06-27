@@ -305,13 +305,20 @@ def _load_additional_item_refs(
             [item_ref_from_json(i) for i in item_refs_json])
       else:
         new_item_refs = []
+        alread_known_item_ref_count = 0
         known_item_ids = compact_item_ids_by_stream_id[stream_id]
         for item_ref_json in item_refs_json:
           if item_ref_json['id'][2:] not in known_item_ids:
             new_item_refs.append(item_ref_from_json(item_ref_json))
-        logging.info('  Got an additional %s item refs for %s',
-            '{:,}'.format(len(new_item_refs)), stream_id)
-        item_refs_responses_by_stream_id[stream_id].extend(new_item_refs)
+          else:
+            alread_known_item_ref_count += 1
+        if new_item_refs:
+          logging.info('  Got an additional %s item refs for %s '
+              '(%s were already known)',
+              '{:,}'.format(len(new_item_refs)),
+              stream_id,
+              '{:,}'.format(alread_known_item_ref_count))
+          item_refs_responses_by_stream_id[stream_id].extend(new_item_refs)
 
 class FetchItemRefsWorker(base.worker.Worker):
   def __init__(self, api, chunk_size):
