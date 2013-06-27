@@ -144,7 +144,7 @@ def main():
   for item_id in item_ids:
     item_id_file_path = base.paths.item_id_to_file_path(
         items_directory, item_id)
-    item_ids_by_path.setdefault(item_id_file_path, list()).append(item_id)
+    item_ids_by_path.setdefault(item_id_file_path, []).append(item_id)
 
   current_item_ids_chunk = []
   item_ids_chunks = [current_item_ids_chunk]
@@ -196,9 +196,11 @@ def main():
       report_progress=report_comments_progress)
   total_comment_count = 0
   for comments_for_broadcast_stream in comments_for_broadcast_streams:
-    for item_id, comments in comments_for_broadcast_stream.items():
+    if not comments_for_broadcast_stream:
+      continue
+    for item_id, comments in comments_for_broadcast_stream.iteritems():
       total_comment_count += len(comments)
-      all_comments.setdefault(item_id, list()).extend(comments)
+      all_comments.setdefault(item_id, []).extend(comments)
 
   logging.info('Writing %s comments from %s items.',
       '{:,}'.format(total_comment_count),
@@ -393,7 +395,7 @@ class FetchWriteItemBodiesWorker(base.worker.Worker):
     for entry in item_bodies:
       item_id_file_path = base.paths.item_id_to_file_path(
           self._items_directory, entry.item_id)
-      item_bodies_by_path.setdefault(item_id_file_path, list()).append(entry)
+      item_bodies_by_path.setdefault(item_id_file_path, []).append(entry)
     return item_bodies_by_path
 
   def _write_item_bodies(self, file_path, item_bodies):
