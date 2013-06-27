@@ -139,7 +139,7 @@ class Api(object):
           comment_id=comment_json['id'],
           plain_content=comment_json['plainContent'],
           html_content=comment_json['htmlContent'],
-          author_name=comment_json['author'],
+          author_name=comment_json.get('author'),
           author_user_id=comment_json['userId'],
           author_profile_id=comment_json['profileId'],
           venue_stream_id=comment_json['venueStreamId'],
