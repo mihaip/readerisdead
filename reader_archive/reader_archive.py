@@ -261,12 +261,17 @@ def _get_stream_ids(api, user_id, data_directory):
 
   subscriptions = api.fetch_subscriptions()
   stream_ids.update([sub.stream_id for sub in subscriptions])
-  save_items(subscriptions, 'subscriptions.json');
+  save_items(subscriptions, 'subscriptions.json')
 
   friends = api.fetch_friends()
   stream_ids.update([
       f.stream_id for f in friends if f.stream_id and f.is_following])
-  save_items(friends, 'friends.json');
+  save_items(friends, 'friends.json')
+
+  bundles = api.fetch_bundles()
+  for bundle in bundles:
+    stream_ids.update([f.stream_id for f in bundle.feeds])
+  save_items(bundles, 'bundles.json')
 
   stream_ids = list(stream_ids)
   # Start the fetch with user streams, since those tend to have more items and

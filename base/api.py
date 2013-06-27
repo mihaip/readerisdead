@@ -99,6 +99,22 @@ class Api(object):
     friends_json = self._fetch_json('friend/list', {'lookup': 'ALL'})
     return friends_json['encodedSharersList']
 
+  def fetch_bundles(self):
+    bundles_json = self._fetch_json('list-user-bundle')
+    result = []
+    for bundle_json in bundles_json['bundles']:
+      feeds = []
+      for feed_json in bundle_json['feeds']:
+        feeds.append(BundleFeed(
+            stream_id=feed_json['id'], title=feed_json['title']))
+      result.append(Bundle(
+        bundle_id=bundle_json['id'],
+        title=bundle_json['title'],
+        description=bundle_json.get('description'),
+        subscriber_count=bundle_json['subscriberCount'],
+        feeds=feeds))
+    return result
+
   def fetch_item_refs(self, stream_id, count=10, continuation_token=None):
     query_params = {'s': stream_id, 'n': count}
     if continuation_token:
@@ -305,6 +321,17 @@ class Friend(collections.namedtuple(
     return result
 
 class Website(collections.namedtuple('Website', ['title', 'url'])):
+  def to_json(self):
+    return self._asdict()
+
+class Bundle(collections.namedtuple('Bundle',
+    ['bundle_id', 'title', 'description', 'subscriber_count', 'feeds'])):
+  def to_json(self):
+    result = self._asdict()
+    result['feeds'] = [f.to_json() for f in self.feeds]
+    return result
+
+class BundleFeed(collections.namedtuple('BundleFeed', ['stream_id', 'title'])):
   def to_json(self):
     return self._asdict()
 
