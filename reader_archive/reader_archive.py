@@ -292,6 +292,8 @@ def _get_stream_ids(api, user_id, data_directory):
   stream_ids.update([r.stream_id for r in recommendations])
   save_items(recommendations, 'recommendations.json')
 
+  stream_ids.append('pop/topic/top/language/en')
+
   stream_ids = list(stream_ids)
   # Start the fetch with user streams, since those tend to have more items and
   # are thus the long pole.

@@ -13,12 +13,17 @@ class TagHelper(object):
       self._state_tag('dislike'),
       self._state_tag('read'),
       self._state_tag('kept-unread'),
+      self._state_tag('muted'),
+      self._state_tag('skimmed'),
+      self._state_tag('itemrecs/en'),
       self._state_tag('tracking-body-link-used'),
       self._state_tag('tracking-emailed'),
       self._state_tag('tracking-item-link-used'),
       self._state_tag('tracking-kept-unread'),
       self._state_tag('tracking-custom-item-link'),
       self._state_tag('tracking-mobile-read'),
+      self._state_tag('tracking-explore-read'),
+      self._state_tag('tracking-igoogle-module-read'),
 
       # Note-in-Reader
       self._source_tag('post'),
