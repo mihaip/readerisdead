@@ -364,13 +364,17 @@ def item_id_from_decimal_form(decimal_form):
   return ItemId(decimal_form=decimal_form, atom_form=atom_form)
 
 def item_id_from_atom_form(atom_form):
-  hex_form = atom_form[len(_ITEM_ID_ATOM_FORM_PREFIX):]
-  int_form = int(hex_form, 16)
+  return item_id_from_compact_form(atom_form[len(_ITEM_ID_ATOM_FORM_PREFIX):])
+
+def item_id_from_compact_form(compact_form):
+  int_form = int(compact_form, 16)
   if int_form > 1 << 63:
     decimal_form = str(int_form - (1 << 64))
   else:
     decimal_form = str(int_form)
-  return ItemId(decimal_form=decimal_form, atom_form=atom_form)
+  return ItemId(
+      decimal_form=decimal_form,
+      atom_form=_ITEM_ID_ATOM_FORM_PREFIX + compact_form)
 
 _TEST_DATA = [
   ("tag:google.com,2005:reader/item/5d0cfa30041d4348", "6705009029382226760"),

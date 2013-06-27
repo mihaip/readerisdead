@@ -50,6 +50,12 @@ def main():
   parser.add_argument('--parallelism', type=int, default=10,
                       help='Number of requests to make in parallel.')
 
+
+  # Miscellaneous.
+  parser.add_argument('--additional_item_refs_file_path', default='',
+                      help='Path to JSON file listing additional tag item refs '
+                           'to fetch')
+
   args = parser.parse_args()
 
   output_directory = base.paths.normalize(args.output_directory)
@@ -98,7 +104,15 @@ def main():
       args.parallelism,
       report_progress=report_item_refs_progress)
 
+  if args.additional_item_refs_file_path:
+    _load_additional_item_refs(
+        base.paths.normalize(args.additional_item_refs_file_path),
+        stream_ids,
+        item_refs_responses,
+        user_info.user_id)
+
   item_ids = set()
+  known_item_ids_in_compact_form = set()
   item_refs_total = 0
   for stream_id, item_refs in itertools.izip(stream_ids, item_refs_responses):
     item_ids.update([item_ref.item_id for item_ref in item_refs])
@@ -257,6 +271,47 @@ def _get_stream_ids(api, user_id, data_directory):
   # are thus the long pole.
   stream_ids.sort(reverse=True)
   return stream_ids
+
+def _load_additional_item_refs(
+    additional_item_refs_file_path, stream_ids, item_refs_responses, user_id):
+  logging.info('Adding additional item refs.')
+  compact_item_ids_by_stream_id = {}
+  item_refs_responses_by_stream_id = {}
+  for stream_id, item_refs in itertools.izip(stream_ids, item_refs_responses):
+    compact_item_ids_by_stream_id[stream_id] = set(
+      item_ref.item_id.compact_form() for item_ref in item_refs)
+    item_refs_responses_by_stream_id[stream_id] = item_refs
+
+  # The JSON file stores item IDs in hex, but with a leading 0x. Additionally,
+  # timestamps are in microseconds, but they're stored as strings.
+  def item_ref_from_json(item_ref_json):
+      return base.api.ItemRef(
+        item_id=base.api.item_id_from_compact_form(item_ref_json['id'][2:]),
+        timestamp_usec=int(item_ref_json['timestampUsec']))
+
+  with open(additional_item_refs_file_path) as additional_item_refs_file:
+    additional_item_refs = json.load(additional_item_refs_file)
+    for stream_id, item_refs_json in additional_item_refs.iteritems():
+      if not stream_id.startswith('user/%s/' % user_id) or \
+          'state/com.google/touch' in stream_id:
+        # Ignore tags from other users and those added by
+        # https://github.com/mihaip/google-reader-touch
+        continue
+      if stream_id not in item_refs_responses_by_stream_id:
+        logging.info('  Stream %s (%s items) is new.',
+          stream_id, '{:,}'.format(len(item_refs_json)))
+        stream_ids.append(stream_id)
+        item_refs_responses.append(
+            [item_ref_from_json(i) for i in item_refs_json])
+      else:
+        new_item_refs = []
+        known_item_ids = compact_item_ids_by_stream_id[stream_id]
+        for item_ref_json in item_refs_json:
+          if item_ref_json['id'][2:] not in known_item_ids:
+            new_item_refs.append(item_ref_from_json(item_ref_json))
+        logging.info('  Got an additional %s item refs for %s',
+            '{:,}'.format(len(new_item_refs)), stream_id)
+        item_refs_responses_by_stream_id[stream_id].extend(new_item_refs)
 
 class FetchItemRefsWorker(base.worker.Worker):
   def __init__(self, api, chunk_size):
