@@ -186,7 +186,7 @@ class Api(object):
     for item_id in item_ids:
       if item_id not in result:
         logging.warning(
-            "Requested item id %s/%s, but it was not found in the result",
+            "Requested item id %s (%s), but it was not found in the result",
             item_id.atom_form, item_id.decimal_form)
 
     return result
@@ -217,7 +217,17 @@ class Api(object):
         return cache_value
 
     def urlencode(params):
-      return urllib.urlencode(params, doseq=True)
+      def encode(s):
+        return isinstance(s, unicode) and s.encode('utf-8') or s
+
+      encoded_params = {}
+      for key, value in params.items():
+        if isinstance(value, list):
+          value = [encode(v) for v in value]
+        else:
+          value = encode(value)
+        encoded_params[encode(key)] = value
+      return urllib.urlencode(encoded_params, doseq=True)
 
     request_url = '%s?%s' % (url, urlencode(query_params))
     request = urllib2.Request(

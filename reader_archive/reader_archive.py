@@ -84,6 +84,9 @@ def main():
 
   fetched_stream_ids = [0]
   def report_item_refs_progress(stream_id, item_refs):
+    if not item_refs:
+      logging.error('  Could not load item refs from %s', stream_id)
+      return
     fetched_stream_ids[0] += 1
     logging.info('  Loaded %s item refs from %s, %d streams left.',
         '{:,}'.format(len(item_refs)),
@@ -108,8 +111,9 @@ def main():
       stream_file.write(json.dumps(stream.to_json()))
 
   item_ids = list(item_ids)
-  logging.info('%d unique items refs (%d total), getting item bodies:',
-      len(item_ids), item_refs_total)
+  logging.info('%s unique items refs (%s total), getting item bodies:',
+      '{:,}'.format(len(item_ids)),
+      '{:,}'.format(item_refs_total))
 
   # We have two different chunking goals:
   # - Fetch items in large-ish chunks (ideally 250), to minimize HTTP request
