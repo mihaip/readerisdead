@@ -295,9 +295,12 @@ def _load_additional_item_refs(
     additional_item_refs = json.load(additional_item_refs_file)
     for stream_id, item_refs_json in additional_item_refs.iteritems():
       if not stream_id.startswith('user/%s/' % user_id) or \
-          'state/com.google/touch' in stream_id:
+          'state/com.google/touch' in stream_id or \
+          'state/com.google/recommendations-' in stream_id:
         # Ignore tags from other users and those added by
-        # https://github.com/mihaip/google-reader-touch
+        # https://github.com/mihaip/google-reader-touch. Also ignore the
+        # recommendations tags, the items that they refer to aren't actually
+        # items in the Reader backend.
         continue
       if stream_id not in item_refs_responses_by_stream_id:
         logging.info('  Stream %s (%s items) is new.',
