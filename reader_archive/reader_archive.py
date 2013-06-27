@@ -90,7 +90,7 @@ def main():
 
   fetched_stream_ids = [0]
   def report_item_refs_progress(stream_id, item_refs):
-    if not item_refs:
+    if item_refs is None:
       logging.error('  Could not load item refs from %s', stream_id)
       return
     fetched_stream_ids[0] += 1
@@ -302,6 +302,7 @@ def _load_additional_item_refs(
         # recommendations tags, the items that they refer to aren't actually
         # items in the Reader backend.
         continue
+
       if stream_id not in item_refs_responses_by_stream_id:
         logging.info('  Stream %s (%s items) is new.',
           stream_id, '{:,}'.format(len(item_refs_json)))
@@ -313,6 +314,9 @@ def _load_additional_item_refs(
         alread_known_item_ref_count = 0
         known_item_ids = compact_item_ids_by_stream_id[stream_id]
         for item_ref_json in item_refs_json:
+          if item_ref_json['id'] == '0x859df8b8d14b566e':
+            # Skip this item, it seems to cause persistent 500s
+            continue
           if item_ref_json['id'][2:] not in known_item_ids:
             new_item_refs.append(item_ref_from_json(item_ref_json))
           else:
