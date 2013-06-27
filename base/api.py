@@ -115,6 +115,16 @@ class Api(object):
         feeds=feeds))
     return result
 
+  def fetch_recommendations(self, count=20):
+    recommendations_json = self._fetch_json(
+        'recommendation/list', {'n': count})
+    result = []
+    for recommendation_json in recommendations_json['recs']:
+      result.append(Recommendation(
+          stream_id=recommendation_json['streamId'],
+          title=recommendation_json['title']))
+    return result
+
   def fetch_item_refs(self, stream_id, count=10, continuation_token=None):
     query_params = {'s': stream_id, 'n': count}
     if continuation_token:
@@ -332,6 +342,11 @@ class Bundle(collections.namedtuple('Bundle',
     return result
 
 class BundleFeed(collections.namedtuple('BundleFeed', ['stream_id', 'title'])):
+  def to_json(self):
+    return self._asdict()
+
+class Recommendation(collections.namedtuple('Recommendation',
+    ['stream_id', 'title'])):
   def to_json(self):
     return self._asdict()
 
