@@ -99,6 +99,25 @@ class Api(object):
     friends_json = self._fetch_json('friend/list', {'lookup': 'ALL'})
     return friends_json['encodedSharersList']
 
+  def fetch_sharing_groups(self):
+    sharing_groups_json = self._fetch_json('friend/groups')
+    result = []
+    for sharing_group_json in sharing_groups_json['sharingGroups']:
+      result.append(SharingGroup(
+        group_id=sharing_group_json['groupId'],
+        is_read_only=sharing_group_json['isReadOnly'],
+        name=sharing_group_json['name'],
+        is_sharing=sharing_group_json['isSharing'],
+      ))
+    return result
+
+  def fetch_sharing_acl(self):
+    sharing_acl_json = self._fetch_json('friend/acl')
+    return SharingAcl(
+        type=sharing_acl_json['type'],
+        member_user_ids=sharing_acl_json['memberId'],
+        is_editing_disabled=sharing_acl_json['isEditingDisabled'])
+
   def fetch_bundles(self):
     bundles_json = self._fetch_json('list-user-bundle')
     result = []
@@ -348,6 +367,16 @@ class Friend(collections.namedtuple(
     return result
 
 class Website(collections.namedtuple('Website', ['title', 'url'])):
+  def to_json(self):
+    return self._asdict()
+
+class SharingGroup(collections.namedtuple('SharingGroup',
+    ['group_id', 'is_read_only', 'name', 'is_sharing'])):
+  def to_json(self):
+    return self._asdict()
+
+class SharingAcl(collections.namedtuple('SharingAcl',
+    ['type', 'member_user_ids', 'is_editing_disabled'])):
   def to_json(self):
     return self._asdict()
 

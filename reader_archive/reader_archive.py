@@ -246,13 +246,16 @@ def _get_auth_token(account, password):
   return auth_token
 
 def _save_preferences(api, data_directory):
-  def save(preferences, file_name):
+  def save(preferences_json, file_name):
     file_path = os.path.join(data_directory, file_name)
     with open(file_path, 'w') as file:
-      file.write(json.dumps(preferences))
+      file.write(json.dumps(preferences_json))
 
   save(api.fetch_preferences(), 'preferences.json')
   save(api.fetch_stream_preferences(), 'stream-preferences.json')
+  save(
+      [g.to_json() for g in api.fetch_sharing_groups()], 'sharing-groups.json')
+  save(api.fetch_sharing_acl().to_json(), 'sharing-acl.json')
 
 def _get_stream_ids(api, user_id, data_directory):
   def save_items(items, file_name):
