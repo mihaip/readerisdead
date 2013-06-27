@@ -125,6 +125,23 @@ class Api(object):
           title=recommendation_json['title']))
     return result
 
+  def fetch_preferences(self):
+    prefs_json = self._fetch_json('preference/list')
+    result = {}
+    for pref_json in prefs_json['prefs']:
+      result[pref_json['id']] = pref_json['value']
+    return result
+
+  def fetch_stream_preferences(self):
+    prefs_json = self._fetch_json('preference/stream/list')
+    result = {}
+    for stream_id, stream_prefs_json in prefs_json['streamprefs'].iteritems():
+      stream_prefs = {}
+      for pref_json in stream_prefs_json:
+        stream_prefs[pref_json['id']] = pref_json['value']
+      result[stream_id] = stream_prefs
+    return result
+
   def fetch_item_refs(self, stream_id, count=10, continuation_token=None):
     query_params = {'s': stream_id, 'n': count}
     if continuation_token:
