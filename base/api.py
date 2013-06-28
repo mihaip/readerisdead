@@ -6,14 +6,16 @@ import urllib2
 
 import base.cache
 import base.paths
+import base.url_fetcher
 
 FEED_STREAM_ID_PREFIX = "feed/"
 
 _ITEM_ID_ATOM_FORM_PREFIX = "tag:google.com,2005:reader/item/"
 
 class Api(object):
-  def __init__(self, auth_token, cache_directory=None):
-    self._auth_token = auth_token
+  def __init__(self, authenticated_url_fetcher, cache_directory=None):
+    self._direct_url_fetcher = base.url_fetcher.DirectUrlFetcher()
+    self._authenticated_url_fetcher = authenticated_url_fetcher
     self._cache = \
       base.cache.DirectoryCache(cache_directory) if cache_directory else None
 
@@ -292,13 +294,12 @@ class Api(object):
       return urllib.urlencode(encoded_params, doseq=True)
 
     request_url = '%s?%s' % (url, urlencode(query_params))
-    request = urllib2.Request(
-        request_url,
-        headers=self._auth_headers() if authenticated else {})
+    url_fetcher = self._authenticated_url_fetcher if authenticated \
+        else self._direct_url_fetcher
     try:
-      response = urllib2.urlopen(
-          request,
-          data=urlencode(post_params) if post_params else None)
+      response_text = url_fetcher.fetch(
+          request_url,
+          post_data=urlencode(post_params) if post_params else None)
     except urllib2.HTTPError, e:
       if e.code >= 400 and e.code < 500:
         # Log 400s, since they're usually programmer error, and the response
@@ -308,14 +309,9 @@ class Api(object):
             e.code, request_url, e.read())
       raise
 
-    response_text = response.read()
-    response.close()
     if self._cache:
       self._cache.set(cache_key, response_text)
     return response_text
-
-  def _auth_headers(self):
-    return {'Authorization': 'GoogleLogin auth=%s' % self._auth_token}
 
 class Tag(collections.namedtuple('Tag', ['stream_id', 'sort_id'])):
   def to_json(self):

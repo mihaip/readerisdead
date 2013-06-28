@@ -13,6 +13,7 @@ import base.api
 import base.atom
 import base.log
 import base.tag_helper
+import base.url_fetcher
 import base.worker
 
 def main():
@@ -70,13 +71,10 @@ def main():
   items_directory = output_sub_directory('items')
   comments_directory = output_sub_directory('comments')
 
-  auth_token = _get_auth_token(args.account, args.password)
-
-  if not auth_token:
-    logging.error('Could not fetch authentication token.')
-    sys.exit(1)
-
-  api = base.api.Api(auth_token, cache_directory=api_responses_directory)
+  api = base.api.Api(
+      authenticated_url_fetcher=
+          base.url_fetcher.ClientLoginUrlFetcher(args.account, args.password),
+      cache_directory=api_responses_directory)
 
   user_info = api.fetch_user_info()
   logging.info(
@@ -187,8 +185,9 @@ def main():
     if comments_by_item_id is None:
       return
     remaining_broadcast_stream_ids[0] -= 1
+    comment_count = sum((len(c) for c in comments_by_item_id.values()), 0)
     logging.info('  Fetched %s comments, %s shared items streams left.',
-        '{:,}'.format(len(comments_by_item_id)),
+        '{:,}'.format(comment_count),
         '{:,}'.format(remaining_broadcast_stream_ids[0]))
   all_comments = {}
   comments_for_broadcast_streams = base.worker.do_work(
@@ -217,33 +216,6 @@ def main():
         "item_id": item_id.to_json(),
         "comments": [c.to_json() for c in comments]
       }))
-
-def _get_auth_token(account, password):
-  account = account or raw_input('Google Account username: ')
-  password = password or getpass.getpass('Password: ')
-  credentials_data = urllib.urlencode({
-    'Email': account,
-    'Passwd': password,
-    'service': 'reader',
-    'accountType': 'GOOGLE',
-  })
-  try:
-    auth_response = urllib2.urlopen(
-        'https://www.google.com/accounts/ClientLogin', credentials_data)
-  except urllib2.HTTPError, e:
-    logging.error(
-        'Error response while fetching authentication token: %s %s',
-        e.code, e.message)
-    return None
-  auth_token = None
-  for line in auth_response.readlines():
-    key, value = line.strip().split('=', 1)
-    if key == 'Auth':
-      auth_token = value
-      break
-  auth_response.close()
-  assert auth_token
-  return auth_token
 
 def _save_preferences(api, data_directory):
   def save(preferences_json, file_name):
@@ -292,7 +264,7 @@ def _get_stream_ids(api, user_id, data_directory):
   stream_ids.update([r.stream_id for r in recommendations])
   save_items(recommendations, 'recommendations.json')
 
-  stream_ids.append('pop/topic/top/language/en')
+  stream_ids.add('pop/topic/top/language/en')
 
   stream_ids = list(stream_ids)
   # Start the fetch with user streams, since those tend to have more items and
