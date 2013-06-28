@@ -128,6 +128,8 @@ def main():
   known_item_ids_in_compact_form = set()
   item_refs_total = 0
   for stream_id, item_refs in itertools.izip(stream_ids, item_refs_responses):
+    if not item_refs:
+      continue
     item_ids.update([item_ref.item_id for item_ref in item_refs])
     item_refs_total += len(item_refs)
 
@@ -398,14 +400,14 @@ class FetchWriteItemBodiesWorker(base.worker.Worker):
         return fetch()
       except urllib2.HTTPError, e:
         if e.code == 500:
-          logging.warn('  500 response when fetching items, retrying with '
+          logging.info('  500 response when fetching items, retrying with '
               'high-fidelity output turned off')
           return fetch(hifi=False)
         else:
           logging.error('  HTTP exception when fetching items', exc_info=True)
           return None
       except ET.ParseError, e:
-          logging.warn('  XML parse error when fetching items, retrying with '
+          logging.info('  XML parse error when fetching items, retrying with '
               'high-fidelity turned off')
           return fetch(hifi=False)
     except:
