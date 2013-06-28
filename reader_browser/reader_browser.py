@@ -3,6 +3,7 @@ import logging
 import os.path
 import socket
 import sys
+import webbrowser
 import SimpleHTTPServer
 import SocketServer
 
@@ -36,10 +37,23 @@ def main():
     logging.error("Could not find archive directory %s", archive_directory)
     syst.exit(1)
 
-  httpd = SocketServer.TCPServer(("", args.port), Handler)
+  httpd = Server(("", args.port), Handler)
 
-  logging.info("Serving at http://%s:%d/", socket.gethostname(), args.port)
+  homepage_url = "http://%s:%d/" % (socket.gethostname(), args.port)
+  logging.info("Serving at %s", homepage_url)
+  webbrowser.open_new_tab(homepage_url)
   httpd.serve_forever()
+
+
+class Server(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+    # Ctrl-C will cleanly kill all spawned threads.
+    daemon_threads = True
+    # Much faster rebinding.
+    allow_reuse_address = True
+
+    def __init__(self, server_address, handler_class):
+        SocketServer.TCPServer.__init__(self, server_address, handler_class)
+
 
 class Handler(SimpleHTTPServer.SimpleHTTPRequestHandler):
   def translate_path(self, path):
