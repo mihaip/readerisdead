@@ -1,5 +1,9 @@
+import json
+import logging
+import time
 import urllib
 import urllib2
+import webbrowser
 
 class UrlFetcher(object):
   def fetch(self, url, post_data=None):
@@ -47,3 +51,85 @@ class ClientLoginUrlFetcher(UrlFetcher):
     response_text = response.read()
     response.close()
     return response_text
+
+_OAUTH_CLIENT_ID = '710067677727.apps.googleusercontent.com'
+_OAUTH_CLIENT_SECRET = '3152N3ORUhdIgYX4LwCcs9Ix'
+
+class OAuthUrlFetcher(UrlFetcher):
+  def __init__(self, refresh_token):
+    if refresh_token:
+      self._refresh_token = refresh_token
+      self._fetch_access_token()
+    else:
+      self._request_authorization()
+
+  def fetch(self, url, post_data=None):
+    if time.time() > self._access_token_expiration_time:
+      logging.info("Access token has expired, requesting a new one.")
+      self._fetch_access_token()
+
+    request = urllib2.Request(
+        url, headers={'Authorization': 'Bearer %s' % self._access_token})
+    response = urllib2.urlopen(request, data=post_data)
+    response_text = response.read()
+    response.close()
+    return response_text
+
+  def _request_authorization(self):
+    query_params = {
+      'response_type': 'code',
+      'client_id': _OAUTH_CLIENT_ID,
+      'redirect_uri': 'urn:ietf:wg:oauth:2.0:oob',
+      'scope': 'https://www.google.com/reader/api'
+    }
+    initial_url = 'https://accounts.google.com/o/oauth2/auth?%s' % \
+        urllib.urlencode(query_params)
+
+    logging.info("Opening the OAuth authorization page...")
+    logging.info("If you do not see a browser tab appear, you should open the "
+        "following URL:\n%s\n", initial_url)
+    webbrowser.open_new_tab(initial_url)
+
+    logging.info("Once you complete the approval, you will be given a code. "
+        "Please copy and paste it below and press return.")
+    authorization_code = raw_input('Authorization code: ')
+
+    token_request = \
+        urllib2.Request('https://accounts.google.com/o/oauth2/token')
+    token_response = urllib2.urlopen(token_request, data=urllib.urlencode({
+      'code': authorization_code,
+      'client_id': _OAUTH_CLIENT_ID,
+      'client_secret': _OAUTH_CLIENT_SECRET,
+      'redirect_uri': 'urn:ietf:wg:oauth:2.0:oob',
+      'grant_type': 'authorization_code',
+    }))
+
+    token_response_json = json.load(token_response)
+    token_response.close()
+
+    self._refresh_token = token_response_json['refresh_token']
+    self._access_token = token_response_json['access_token']
+    self._access_token_expiration_time = \
+        time.time() + token_response_json['expires_in'] - 60
+
+    logging.info('If you\'d like to use the tool again without having to go '
+        'through OAuth authorization, you can add the following flag to the '
+        'invocation:\n\n  --oauth_refresh_token="%s"', self._refresh_token)
+
+  def _fetch_access_token(self):
+    token_request = \
+        urllib2.Request('https://accounts.google.com/o/oauth2/token')
+    token_response = urllib2.urlopen(token_request, data=urllib.urlencode({
+      'refresh_token': self._refresh_token,
+      'client_id': _OAUTH_CLIENT_ID,
+      'client_secret': _OAUTH_CLIENT_SECRET,
+      'grant_type': 'refresh_token',
+    }))
+
+    token_response_json = json.load(token_response)
+    token_response.close()
+
+    self._access_token = token_response_json['access_token']
+    self._access_token_expiration_time = \
+        time.time() + token_response_json['expires_in'] - 60
+

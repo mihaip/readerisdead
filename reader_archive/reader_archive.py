@@ -24,6 +24,13 @@ def main():
       description='Comprehensive archive of a Google Reader account')
 
   # Credentials
+  parser.add_argument('--use_oauth', type=bool, default=True,
+                      help='Use OAuth for authentication. If false, then '
+                            'ClientLogin will be used and you will be prompted '
+                            'for a username and password')
+  parser.add_argument('--oauth_refresh_token', default='',
+                      help='A previously obtained refresh token (used to bypass '
+                            'OAuth setup')
   parser.add_argument('--account', default='',
                       help='Google Account to save the archive for. Omit to '
                           'specify via standard input')
@@ -71,9 +78,14 @@ def main():
   items_directory = output_sub_directory('items')
   comments_directory = output_sub_directory('comments')
 
+  if args.use_oauth:
+    authenticated_url_fetcher = base.url_fetcher.OAuthUrlFetcher(
+        args.oauth_refresh_token)
+  else:
+    authenticated_url_fetcher = base.url_fetcher.ClientLoginUrlFetcher(
+        args.account, args.password)
   api = base.api.Api(
-      authenticated_url_fetcher=
-          base.url_fetcher.ClientLoginUrlFetcher(args.account, args.password),
+      authenticated_url_fetcher=authenticated_url_fetcher,
       cache_directory=api_responses_directory)
 
   user_info = api.fetch_user_info()
