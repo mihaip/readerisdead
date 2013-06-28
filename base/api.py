@@ -99,7 +99,7 @@ class Api(object):
 
   def fetch_encoded_sharers(self):
     friends_json = self._fetch_json('friend/list', {'lookup': 'ALL'})
-    return friends_json['encodedSharersList']
+    return friends_json.get('encodedSharersList', '')
 
   def fetch_sharing_groups(self):
     sharing_groups_json = self._fetch_json('friend/groups')
