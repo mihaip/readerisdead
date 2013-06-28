@@ -8,15 +8,17 @@ _Comprehensive archive of a Google Reader account._
 
 Unlike Google Reader's [Takeout support](http://googlesystem.blogspot.com/2012/11/export-google-reader-data-in-google.html), provides a complete archive of a Reader account's data. This includes:
 
-* Every read item
-* Every starred item
-* Every tagged item
-* Every shared item (from you and your friends)
-* Every comment on every shared item
-* Every item you've kept unread, emailed, read on your phone, clicked on or otherwise [interacted](http://googlesystem.blogspot.com/2008/03/explore-your-interactions-with-google.html) with.
-* Every item that has appeared in one of your subscriptions
-* Every item that was recommended to you
-* Every item in the (English) "Explore" section
+* All your read items
+* All your starred items
+* All your tagged items
+* All your shared items
+* All the shared items from the people you were following.
+* All the comments on shared items
+* All your liked items
+* All items you've kept unread, emailed, read on your phone, clicked on or otherwise [interacted](http://googlesystem.blogspot.com/2008/03/explore-your-interactions-with-google.html) with.
+* All items that have appeared in one of your subscriptions
+* All items that were recommended to you
+* All items in the (English) "Explore" section
 * All the profiles of the people you were following before the [sharepocalypse](http://googlereader.blogspot.com/2011/10/new-in-reader-fresh-design-and-google.html).
 * All your preferences.
 

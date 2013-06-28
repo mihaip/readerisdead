@@ -53,6 +53,7 @@ function buildTree(subscriptionsJson, tagsJson) {
       var subscriptionItem = new TreeItem(subscriptionJson['title']);
       insertStreamItem.addChild(subscriptionItem);
     }
+    // TODO: handle subscriptions with no insert streams
   }
 
   // Remaining tags are item-level tags.
