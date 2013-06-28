@@ -8,9 +8,14 @@ import base.cache
 import base.paths
 import base.url_fetcher
 
-FEED_STREAM_ID_PREFIX = "feed/"
+FEED_STREAM_ID_PREFIX = 'feed/'
+EXPLORE_STREAM_ID = 'pop/topic/top/language/en'
 
-_ITEM_ID_ATOM_FORM_PREFIX = "tag:google.com,2005:reader/item/"
+_ITEM_ID_ATOM_FORM_PREFIX = 'tag:google.com,2005:reader/item/'
+
+# The explore stream lists a bunch of item IDs that can't be found, ignore them
+# instead of worrying people.
+not_found_items_ids_to_ignore = set()
 
 class Api(object):
   def __init__(self, authenticated_url_fetcher, cache_directory=None):
@@ -248,9 +253,9 @@ class Api(object):
         result[item_id] = item_body_json
 
     for item_id in item_ids:
-      if item_id not in result:
+      if item_id not in result and item_id not in not_found_items_ids_to_ignore:
         logging.warning(
-            "Requested item id %s (%s), but it was not found in the result",
+            'Requested item id %s (%s), but it was not found in the result',
             item_id.atom_form, item_id.decimal_form)
 
     return result
@@ -305,7 +310,7 @@ class Api(object):
         # Log 400s, since they're usually programmer error, and the response
         # indicates how to fix it.
         logging.error(
-            "HTTP status %d when requesting %s. Error response body:\n%s",
+            'HTTP status %d when requesting %s. Error response body:\n%s',
             e.code, request_url, e.read())
       raise
 
@@ -414,15 +419,15 @@ UserInfo = collections.namedtuple('UserInfo', ['user_id', 'email'])
 class ItemRef(collections.namedtuple('ItemRef', ['item_id', 'timestamp_usec'])):
   def to_json(self):
     return {
-      "item_id": self.item_id.to_json(),
-      "timestamp_usec": self.timestamp_usec,
+      'item_id': self.item_id.to_json(),
+      'timestamp_usec': self.timestamp_usec,
     }
 
 class Stream(collections.namedtuple('Stream', ['stream_id', 'item_refs'])):
   def to_json(self):
     return {
-      "stream_id": self.stream_id,
-      "item_refs": {
+      'stream_id': self.stream_id,
+      'item_refs': {
         item_ref.item_id.to_json() : item_ref.timestamp_usec
             for item_ref in self.item_refs
       },
@@ -461,16 +466,16 @@ def item_id_from_compact_form(compact_form):
       atom_form=_ITEM_ID_ATOM_FORM_PREFIX + compact_form)
 
 _TEST_DATA = [
-  ("tag:google.com,2005:reader/item/5d0cfa30041d4348", "6705009029382226760"),
-  ("tag:google.com,2005:reader/item/024025978b5e50d2", "162170919393841362"),
-  ("tag:google.com,2005:reader/item/fb115bd6d34a8e9f", "-355401917359550817"),
+  ('tag:google.com,2005:reader/item/5d0cfa30041d4348', '6705009029382226760'),
+  ('tag:google.com,2005:reader/item/024025978b5e50d2', '162170919393841362'),
+  ('tag:google.com,2005:reader/item/fb115bd6d34a8e9f', '-355401917359550817'),
 ]
 
 def _test_ids():
   for atom_form, decimal_form in _TEST_DATA:
     item_id = item_id_from_decimal_form(decimal_form)
     assert item_id.atom_form == atom_form, \
-        "%s != %s" % (item_id.atom_form, atom_form)
+        '%s != %s' % (item_id.atom_form, atom_form)
     item_id = item_id_from_atom_form(atom_form)
     assert item_id.decimal_form == decimal_form, \
-        "%s != %s" % (item_id.decimal_form, decimal_form)
+        '%s != %s' % (item_id.decimal_form, decimal_form)

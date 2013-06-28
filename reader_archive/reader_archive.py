@@ -131,6 +131,10 @@ def main():
     item_ids.update([item_ref.item_id for item_ref in item_refs])
     item_refs_total += len(item_refs)
 
+    if stream_id == base.api.EXPLORE_STREAM_ID:
+      base.api.not_found_items_ids_to_ignore.update(
+          [i.item_id for i in item_refs])
+
     stream = base.api.Stream(stream_id=stream_id, item_refs=item_refs)
     stream_file_name = base.paths.stream_id_to_file_name(stream_id) + '.json'
     stream_file_path = os.path.join(streams_directory, stream_file_name)
@@ -277,7 +281,7 @@ def _get_stream_ids(api, user_id, data_directory):
   stream_ids.update([r.stream_id for r in recommendations])
   save_items(recommendations, 'recommendations.json')
 
-  stream_ids.add('pop/topic/top/language/en')
+  stream_ids.add(base.api.EXPLORE_STREAM_ID)
 
   stream_ids = list(stream_ids)
   # Start the fetch with user streams, since those tend to have more items and
