@@ -15,15 +15,23 @@ Unlike Google Reader's [Takeout support](http://googlesystem.blogspot.com/2012/1
 * Every comment on every shared item
 * Every item you've kept unread, emailed, read on your phone, clicked on or otherwise [interacted](http://googlesystem.blogspot.com/2008/03/explore-your-interactions-with-google.html) with.
 * Every item that has appeared in one of your subscriptions
+* Every item that was recommended to you
+* Every item in the (English) "Explore" section
+* All the profiles of the people you were following before the [sharepocalypse](http://googlereader.blogspot.com/2011/10/new-in-reader-fresh-design-and-google.html).
+* All your preferences.
 
 To use it:
 
 ```
-bin/reader_archive \
-    --output_directory=~/Downloads/reader_archive
+bin/reader_archive --output_directory=~/Downloads/reader_archive
 ```
 
-You will be prompted for the Google Account username and password (OAuth support is coming soon)
+A browser window will appear asking you to authorize the app. Once you do, you'll be given a code to paste back into the terminal (you can also use the `--use_client_login` flag to instead be prompted for your Google Account username and password). See
+[this wiki page](https://github.com/mihaip/readerisdead/wiki/reader_archive-Format) for an explanation of the archive format. The intent is to be comprehensive, such that other tools that use the archive data may be created.
+
+The archiving process can take a while, depending on the size of your account
+and your internet connection. For an account with 300,000 read items, the
+process took about 10 minutes and generated 1 GB of data.
 
 ## reader_browser
 

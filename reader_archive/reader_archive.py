@@ -24,10 +24,10 @@ def main():
       description='Comprehensive archive of a Google Reader account')
 
   # Credentials
-  parser.add_argument('--use_oauth', type=bool, default=True,
-                      help='Use OAuth for authentication. If false, then '
-                            'ClientLogin will be used and you will be prompted '
-                            'for a username and password')
+  parser.add_argument('--use_client_login' ,action='store_true',
+                      help='Instead of OAuth, use ClientLogin for '
+                            'authentication. You will be prompted for a '
+                            'username and password')
   parser.add_argument('--oauth_refresh_token', default='',
                       help='A previously obtained refresh token (used to bypass '
                             'OAuth setup')
@@ -78,12 +78,12 @@ def main():
   items_directory = output_sub_directory('items')
   comments_directory = output_sub_directory('comments')
 
-  if args.use_oauth:
-    authenticated_url_fetcher = base.url_fetcher.OAuthUrlFetcher(
-        args.oauth_refresh_token)
-  else:
+  if args.use_client_login:
     authenticated_url_fetcher = base.url_fetcher.ClientLoginUrlFetcher(
         args.account, args.password)
+  else:
+    authenticated_url_fetcher = base.url_fetcher.OAuthUrlFetcher(
+        args.oauth_refresh_token)
   api = base.api.Api(
       authenticated_url_fetcher=authenticated_url_fetcher,
       cache_directory=api_responses_directory)
@@ -228,6 +228,10 @@ def main():
         "item_id": item_id.to_json(),
         "comments": [c.to_json() for c in comments]
       }))
+
+  with open(os.path.join(output_directory, 'README'), 'w') as readme_file:
+    readme_file.write('See https://github.com/mihaip/readerisdead/'
+        'wiki/reader_archive-Format.\n')
 
 def _save_preferences(api, data_directory):
   def save(preferences_json, file_name):
