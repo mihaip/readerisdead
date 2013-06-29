@@ -229,7 +229,8 @@ def fetch_feed(feed_url, max_items, output_path, media_rss=True, hifi=True):
     continuation_element = response_root.find(
         '{%s}continuation' % base.atom.READER_NS)
     if continuation_element is not None:
-      # TODO: explain
+      # Strip the continuation token from the combined feed, it's only
+      # applicable to the first chunk.
       response_root.remove(continuation_element)
       continuation_token = continuation_element.text
     else:
