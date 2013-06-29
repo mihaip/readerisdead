@@ -1,4 +1,4 @@
 #!/bin/sh
 
 ROOT_DIR=$(dirname $0)/..
-PYTHONPATH=$ROOT_DIR /usr/bin/env python2.7 $ROOT_DIR/reader_browser/reader_browser.py $*
+PYTHONPATH=$ROOT_DIR /usr/bin/env python2.7 $ROOT_DIR/reader_browser/reader_browser.py "$@"
