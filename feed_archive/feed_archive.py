@@ -77,11 +77,12 @@ def main():
       output_path = get_output_path(output_directory, feed_url)
     else:
       output_path = None
-    feed_fetch_requests.append(
-      FeedFetchRequest(feed_url, args.max_items, output_path))
+    feed_fetch_requests.append(FeedFetchRequest(feed_url, output_path))
 
-  feed_fetch_responses = \
-    base.worker.do_work(FeedFetchWorker, feed_fetch_requests, args.parallelism)
+  feed_fetch_responses = base.worker.do_work(
+      lambda: FeedFetchWorker(args.max_items),
+      feed_fetch_requests,
+      args.parallelism)
 
   success_count = 0
   failures = []
@@ -99,20 +100,15 @@ def main():
       logging.warning('  %s', feed_url)
 
 class FeedFetchWorker(base.worker.Worker):
+  def __init__(self, max_items):
+    self._max_items = max_items
+
   def work(self, request):
     response = FeedFetchResponse(request.feed_url, is_success=True)
-    def fetch(media_rss=True, hifi=True):
-      fetch_feed(
-          request.feed_url,
-          request.max_items,
-          request.output_path,
-          media_rss=media_rss,
-          hifi=hifi)
-
     try:
       try:
         try:
-          fetch()
+          self._fetch(request)
         except urllib2.HTTPError, e:
           # Reader's MediaRSS reconstruction code appears to have a bug for some
           # feeds (it causes an exception to be thrown), so we retry with
@@ -120,17 +116,17 @@ class FeedFetchWorker(base.worker.Worker):
           if e.code == 500:
             logging.warn('500 response when fetching %s, '
               'retrying with MediaRSS turned off', request.feed_url)
-            fetch(media_rss=False)
+            self._fetch(request, media_rss=False)
           else:
             response.is_success = False
         except ET.ParseError, e:
             logging.warn('XML parse error when fetching %s, '
               'retrying with MediaRSS turned off', request.feed_url)
-            fetch(media_rss=False)
+            self._fetch(request, media_rss=False)
       except ET.ParseError, e:
             logging.warn('XML parse error when fetching %s, retrying with '
                 'MediaRSS and high-fidelity turned off', request.feed_url)
-            fetch(media_rss=False, hifi=False)
+            self._fetch(request, media_rss=False, hifi=False)
     except:
       logging.error(
           'Exception when fetching %s', request.feed_url, exc_info=True)
@@ -138,10 +134,71 @@ class FeedFetchWorker(base.worker.Worker):
     finally:
       return response
 
+  def _fetch(self, request, media_rss=True, hifi=True):
+    continuation_token = None
+    combined_feed = None
+    total_entries = 0
+    while True:
+      parameters = _BASE_PARAMETERS.copy()
+      if continuation_token:
+        parameters['c'] = continuation_token
+      if media_rss:
+        parameters['mediaRss'] = 'true'
+      stream_id = get_stream_id(request.feed_url)
+      reader_url = (
+        'http://www.google.com/reader/public/atom/%s%s?%s' %
+        ('hifi/' if hifi else '', urllib.quote(stream_id),
+            urllib.urlencode(parameters)))
+      logging.debug('Fetching %s', reader_url)
+      url_request = urllib2.Request(reader_url)
+      url_response = urllib2.urlopen(url_request)
+      response_tree = ET.parse(url_response)
+      response_root = response_tree.getroot()
+      entries = response_root.findall('{%s}entry' % base.atom.ATOM_NS)
+      oldest_message = ''
+      if entries:
+        last_crawl_timestamp_msec = \
+            entries[-1].attrib['{%s}crawl-timestamp-msec' % base.atom.READER_NS]
+        last_crawl_timestamp = datetime.datetime.utcfromtimestamp(
+            float(last_crawl_timestamp_msec)/1000)
+        oldest_message = ' (oldest is from %s)' % last_crawl_timestamp
+      logging.info('Loaded %d items%s', len(entries), oldest_message)
+      if combined_feed:
+        combined_feed.extend(entries)
+      else:
+        combined_feed = response_root
+
+      total_entries += len(entries)
+      if self._max_items and total_entries >= self._max_items:
+        break
+
+      continuation_element = response_root.find(
+          '{%s}continuation' % base.atom.READER_NS)
+      if continuation_element is not None:
+        # Strip the continuation token from the combined feed, it's only
+        # applicable to the first chunk.
+        response_root.remove(continuation_element)
+        continuation_token = continuation_element.text
+      else:
+        break
+    combined_feed_tree = ET.ElementTree(combined_feed)
+
+    if request.output_path:
+      output_file = open(request.output_path, 'w')
+      logging.info('Writing %d items to %s' % (total_entries, request.output_path))
+    else:
+      output_file = sys.stdout
+      logging.info('Writing %d items to stdout' % total_entries)
+    combined_feed_tree.write(
+        output_file,
+        xml_declaration=True,
+        encoding='utf-8')
+    if request.output_path:
+      output_file.close()
+
 class FeedFetchRequest(object):
-  def __init__(self, feed_url, max_items, output_path):
+  def __init__(self, feed_url, output_path):
     self.feed_url = feed_url
-    self.max_items = max_items
     self.output_path = output_path
 
 class FeedFetchResponse(object):
@@ -187,68 +244,6 @@ def get_stream_id(feed_url):
     # Ignore malformed URLs
     pass
   return 'feed/%s' % feed_url
-
-def fetch_feed(feed_url, max_items, output_path, media_rss=True, hifi=True):
-  continuation_token = None
-  combined_feed = None
-  total_entries = 0
-  while True:
-    parameters = _BASE_PARAMETERS.copy()
-    if continuation_token:
-      parameters['c'] = continuation_token
-    if media_rss:
-      parameters['mediaRss'] = 'true'
-    stream_id = get_stream_id(feed_url)
-    reader_url = (
-      'http://www.google.com/reader/public/atom/%s%s?%s' %
-      ('hifi/' if hifi else '', urllib.quote(stream_id),
-          urllib.urlencode(parameters)))
-    logging.debug('Fetching %s', reader_url)
-    request = urllib2.Request(reader_url)
-    response = urllib2.urlopen(request)
-    response_tree = ET.parse(response)
-    response_root = response_tree.getroot()
-    entries = response_root.findall('{%s}entry' % base.atom.ATOM_NS)
-    oldest_message = ''
-    if entries:
-      last_crawl_timestamp_msec = \
-          entries[-1].attrib['{%s}crawl-timestamp-msec' % base.atom.READER_NS]
-      last_crawl_timestamp = datetime.datetime.utcfromtimestamp(
-          float(last_crawl_timestamp_msec)/1000)
-      oldest_message = ' (oldest is from %s)' % last_crawl_timestamp
-    logging.info('Loaded %d items%s', len(entries), oldest_message)
-    if combined_feed:
-      combined_feed.extend(entries)
-    else:
-      combined_feed = response_root
-
-    total_entries += len(entries)
-    if max_items and total_entries >= max_items:
-      break
-
-    continuation_element = response_root.find(
-        '{%s}continuation' % base.atom.READER_NS)
-    if continuation_element is not None:
-      # Strip the continuation token from the combined feed, it's only
-      # applicable to the first chunk.
-      response_root.remove(continuation_element)
-      continuation_token = continuation_element.text
-    else:
-      break
-  combined_feed_tree = ET.ElementTree(combined_feed)
-
-  if output_path:
-    output_file = open(output_path, 'w')
-    logging.info('Writing %d items to %s' % (total_entries, output_path))
-  else:
-    output_file = sys.stdout
-    logging.info('Writing %d items to stdout' % total_entries)
-  combined_feed_tree.write(
-      output_file,
-      xml_declaration=True,
-      encoding='utf-8')
-  if output_path:
-    output_file.close()
 
 if __name__ == '__main__':
     main()
