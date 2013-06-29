@@ -1,5 +1,4 @@
 import argparse
-import getpass
 import itertools
 import json
 import logging
