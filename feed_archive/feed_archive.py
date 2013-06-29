@@ -11,6 +11,7 @@ import xml.etree.cElementTree as ET
 import base.atom
 import base.log
 import base.paths
+import base.url_fetcher
 import base.worker
 
 _BASE_PARAMETERS = {
@@ -55,6 +56,9 @@ def main():
                            'timestamp restriction)')
   parser.add_argument('--parallelism', type=int, default=10,
                       help='Number of feeds to fetch in parallel.')
+  parser.add_argument('--http_retry_count', type=int, default=1,
+                      help='Number of retries to make in the case of HTTP '
+                           'request errors.')
 
   args = parser.parse_args()
   if args.opml_file:
@@ -68,6 +72,11 @@ def main():
     output_directory = base.paths.normalize(output_directory)
     base.paths.ensure_exists(output_directory)
 
+  url_fetcher = base.url_fetcher.DirectUrlFetcher()
+  if args.http_retry_count > 1:
+    url_fetcher = base.url_fetcher.RetryingUrlFetcher(
+        args.http_retry_count, url_fetcher)
+
   logging.info('Fetching archived data for %d feed%s',
       len(feed_urls), len(feed_urls) == 1 and '' or 's')
 
@@ -80,7 +89,7 @@ def main():
     feed_fetch_requests.append(FeedFetchRequest(feed_url, output_path))
 
   feed_fetch_responses = base.worker.do_work(
-      lambda: FeedFetchWorker(args.max_items),
+      lambda: FeedFetchWorker(url_fetcher, args.max_items),
       feed_fetch_requests,
       args.parallelism)
 
@@ -100,7 +109,8 @@ def main():
       logging.warning('  %s', feed_url)
 
 class FeedFetchWorker(base.worker.Worker):
-  def __init__(self, max_items):
+  def __init__(self, url_fetcher, max_items):
+    self._url_fetcher = url_fetcher
     self._max_items = max_items
 
   def work(self, request):
@@ -150,10 +160,8 @@ class FeedFetchWorker(base.worker.Worker):
         ('hifi/' if hifi else '', urllib.quote(stream_id),
             urllib.urlencode(parameters)))
       logging.debug('Fetching %s', reader_url)
-      url_request = urllib2.Request(reader_url)
-      url_response = urllib2.urlopen(url_request)
-      response_tree = ET.parse(url_response)
-      response_root = response_tree.getroot()
+      url_response_text = self._url_fetcher.fetch(reader_url)
+      response_root = ET.fromstring(url_response_text)
       entries = response_root.findall('{%s}entry' % base.atom.ATOM_NS)
       oldest_message = ''
       if entries:
