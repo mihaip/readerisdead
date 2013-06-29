@@ -4,6 +4,7 @@ import time
 import urllib
 import urllib2
 import webbrowser
+import getpass
 
 class UrlFetcher(object):
   def fetch(self, url, post_data=None):
