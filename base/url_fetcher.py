@@ -1,10 +1,11 @@
+import getpass
 import json
 import logging
+import sys
 import time
 import urllib
 import urllib2
 import webbrowser
-import getpass
 
 class UrlFetcher(object):
   def fetch(self, url, post_data=None):
@@ -21,7 +22,14 @@ class DirectUrlFetcher(UrlFetcher):
 class ClientLoginUrlFetcher(UrlFetcher):
   def __init__(self, account, password):
     account = account or raw_input('Google Account username: ')
+    if not account:
+      logging.critical("Username was not provided.")
+      sys.exit(1)
     password = password or getpass.getpass('Password: ')
+    if not password:
+      logging.critical("Password was not provided.")
+      sys.exit(1)
+
     credentials_data = urllib.urlencode({
       'Email': account,
       'Passwd': password,
@@ -94,6 +102,9 @@ class OAuthUrlFetcher(UrlFetcher):
     logging.info("Once you complete the approval, you will be given a code. "
         "Please copy and paste it below and press return.")
     authorization_code = raw_input('Authorization code: ')
+    if not authorization_code:
+      logging.critical("Authorization code was not provided.")
+      sys.exit(1)
 
     token_request = \
         urllib2.Request('https://accounts.google.com/o/oauth2/token')

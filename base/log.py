@@ -44,6 +44,7 @@ class LogFormatter(logging.Formatter):
                 logging.INFO: curses.tparm(fg_color, 2),  # Green
                 logging.WARNING: curses.tparm(fg_color, 3),  # Yellow
                 logging.ERROR: curses.tparm(fg_color, 1),  # Red
+                logging.CRITICAL: curses.tparm(fg_color, 5),  # Magenta
             }
             self._normal = curses.tigetstr("sgr0")
 
