@@ -56,7 +56,9 @@ def main():
                            'limit, only mean to be used for development)')
   parser.add_argument('--parallelism', type=int, default=10,
                       help='Number of requests to make in parallel.')
-
+  parser.add_argument('--http_retry_count', type=int, default=1,
+                      help='Number of retries to make in the case of HTTP '
+                           'request errors.')
 
   # Miscellaneous.
   parser.add_argument('--additional_item_refs_file_path', default='',
@@ -85,6 +87,7 @@ def main():
         args.oauth_refresh_token)
   api = base.api.Api(
       authenticated_url_fetcher=authenticated_url_fetcher,
+      http_retry_count=args.http_retry_count,
       cache_directory=api_responses_directory)
 
   user_info = api.fetch_user_info()

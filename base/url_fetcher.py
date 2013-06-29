@@ -11,6 +11,22 @@ class UrlFetcher(object):
   def fetch(self, url, post_data=None):
     raise NotImplementedError()
 
+class RetryingUrlFetcher(UrlFetcher):
+  def __init__(self, retry_count, url_fetcher):
+    self._retry_count = retry_count
+    self._url_fetcher = url_fetcher
+
+  def fetch(self, url, post_data=None):
+    for i in xrange(0, self._retry_count):
+      try:
+        return self._url_fetcher.fetch(url, post_data)
+      except urllib2.URLError, e:
+        if i == self._retry_count - 1:
+          raise
+        else:
+          logging.info("Ignoring URL error %s, %d retries remaining.",
+              e, self._retry_count - i - 1)
+
 class DirectUrlFetcher(UrlFetcher):
   def fetch(self, url, post_data=None):
     request = urllib2.Request(url)
@@ -30,6 +46,7 @@ class ClientLoginUrlFetcher(UrlFetcher):
       logging.critical("Password was not provided.")
       sys.exit(1)
 
+    self._auth_token = None
     credentials_data = urllib.urlencode({
       'Email': account,
       'Passwd': password,
@@ -39,18 +56,16 @@ class ClientLoginUrlFetcher(UrlFetcher):
     try:
       auth_response = urllib2.urlopen(
           'https://www.google.com/accounts/ClientLogin', credentials_data)
+      for line in auth_response.readlines():
+        key, value = line.strip().split('=', 1)
+        if key == 'Auth':
+          self._auth_token = value
+          break
+      auth_response.close()
     except urllib2.HTTPError, e:
       logging.error(
           'Error response while fetching authentication token: %s %s',
           e.code, e.message)
-      return None
-    self._auth_token = None
-    for line in auth_response.readlines():
-      key, value = line.strip().split('=', 1)
-      if key == 'Auth':
-        self._auth_token = value
-        break
-    auth_response.close()
     assert self._auth_token
 
   def fetch(self, url, post_data=None):
