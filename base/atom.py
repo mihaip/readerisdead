@@ -15,8 +15,11 @@ def init():
   ET.register_namespace('media', 'http://search.yahoo.com/mrss/')
   ET.register_namespace('thr', 'http://purl.org/syndication/thread/1.0')
 
-def parse(xml_text):
-  feed_element = ET.fromstring(xml_text)
+def parse(xml_text_or_file):
+  if hasattr(xml_text_or_file, 'read'):
+    feed_element = ET.parse(xml_text_or_file)
+  else:
+    feed_element = ET.fromstring(xml_text_or_file)
   entry_elements = feed_element.findall('{%s}entry' % ATOM_NS)
   entries = []
   for entry_element in entry_elements:

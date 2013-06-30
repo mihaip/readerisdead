@@ -1,6 +1,7 @@
 import collections
 import json
 import logging
+import re
 import urllib
 import urllib2
 
@@ -411,6 +412,10 @@ class Comment(collections.namedtuple(
   def to_json(self):
     return self._asdict()
 
+  @staticmethod
+  def from_json(comment_json):
+    return Comment(**comment_json)
+
 UserInfo = collections.namedtuple('UserInfo', ['user_id', 'email'])
 
 class ItemRef(collections.namedtuple('ItemRef', ['item_id', 'timestamp_usec'])):
@@ -430,6 +435,18 @@ class Stream(collections.namedtuple('Stream', ['stream_id', 'item_refs'])):
       },
     }
 
+  @staticmethod
+  def from_json(stream_json):
+    return Stream(
+        stream_id=stream_json['stream_id'],
+        item_refs=[
+          ItemRef(
+              item_id=ItemId.from_json(item_id_json),
+              timestamp_usec=timestamp_usec
+          ) for item_id_json, timestamp_usec
+          in stream_json['item_refs'].iteritems()
+        ])
+
 # See https://code.google.com/p/google-reader-api/wiki/ItemId for the two forms
 # item IDs.
 class ItemId(collections.namedtuple('ItemId', ['decimal_form', 'atom_form'])):
@@ -438,6 +455,10 @@ class ItemId(collections.namedtuple('ItemId', ['decimal_form', 'atom_form'])):
 
   def compact_form(self):
     return self.atom_form[len(_ITEM_ID_ATOM_FORM_PREFIX):]
+
+  @staticmethod
+  def from_json(item_id_json):
+    return item_id_from_compact_form(item_id_json)
 
 def item_id_from_decimal_form(decimal_form):
   int_form = int(decimal_form)
@@ -461,6 +482,21 @@ def item_id_from_compact_form(compact_form):
   return ItemId(
       decimal_form=decimal_form,
       atom_form=_ITEM_ID_ATOM_FORM_PREFIX + compact_form)
+
+def item_id_from_any_form(form):
+  if form.startswith(_ITEM_ID_ATOM_FORM_PREFIX):
+    return item_id_from_atom_form(form)
+
+  if form.startswith('0x'):
+    return item_id_from_compact_form(form[2:])
+
+  if re.match('^[0-9a-f]+$', form, re.I):
+    return item_id_from_compact_form(form)
+
+  if re.match('^-?[0-9]+$', form):
+    return item_id_from_decimal_form(form)
+
+  return None
 
 _TEST_DATA = [
   ('tag:google.com,2005:reader/item/5d0cfa30041d4348', '6705009029382226760'),
