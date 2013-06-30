@@ -367,7 +367,8 @@ class FetchItemRefsWorker(base.worker.Worker):
           count=self._chunk_size,
           continuation_token=continuation_token)
       result.extend(item_refs)
-      if not continuation_token or len(result) >= self._max_items_per_stream:
+      if not continuation_token or (self._max_items_per_stream and
+          len(result) >= self._max_items_per_stream):
         break
     return result
 
