@@ -308,19 +308,9 @@ class Api(object):
     request_url = '%s?%s' % (url, urlencode(query_params))
     url_fetcher = self._authenticated_url_fetcher if authenticated \
         else self._direct_url_fetcher
-    try:
-      response_text = url_fetcher.fetch(
-          request_url,
-          post_data=urlencode(post_params) if post_params else None)
-    except urllib2.HTTPError, e:
-      if e.code >= 400 and e.code < 500:
-        # Log 400s, since they're usually programmer error, and the response
-        # indicates how to fix it.
-        logging.error(
-            'HTTP status %d when requesting %s. Error response body:\n%s',
-            e.code, request_url, e.read())
-      raise
-
+    response_text = url_fetcher.fetch(
+        request_url,
+        post_data=urlencode(post_params) if post_params else None)
     if self._cache:
       self._cache.set(cache_key, response_text)
     return response_text

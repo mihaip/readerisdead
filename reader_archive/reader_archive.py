@@ -362,10 +362,18 @@ class FetchItemRefsWorker(base.worker.Worker):
     result = []
     continuation_token = None
     while True:
-      item_refs, continuation_token = self._api.fetch_item_refs(
-          stream_id,
-          count=self._chunk_size,
-          continuation_token=continuation_token)
+      try:
+        item_refs, continuation_token = self._api.fetch_item_refs(
+            stream_id,
+            count=self._chunk_size,
+            continuation_token=continuation_token)
+      except urllib2.HTTPError, e:
+        if e.code == 400 and "Permission denied" in e.read():
+          logging.warn("  Permission denied when getting items for the stream "
+              "%s, it's most likely private now.", stream_id)
+          return None
+        else:
+          raise
       result.extend(item_refs)
       if not continuation_token or (self._max_items_per_stream and
           len(result) >= self._max_items_per_stream):
@@ -419,7 +427,8 @@ class FetchWriteItemBodiesWorker(base.worker.Worker):
               'high-fidelity turned off')
           return fetch(hifi=False)
     except:
-      logging.error('  Exception when fetching items', exc_info=True)
+      logging.error('  Exception when fetching items %s',
+          ",".join([i.compact_form() for i in item_ids]), exc_info=True)
       return None
 
   def _group_item_bodies(self, item_bodies):
