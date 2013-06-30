@@ -182,18 +182,27 @@ def main():
 
   item_bodies_to_fetch = len(item_ids)
   fetched_item_bodies = [0]
-  def report_item_bodies_progress(_, count):
-    if count is None:
+  missing_item_bodies = set()
+  def report_item_bodies_progress(requested_item_ids, found_item_ids):
+    if found_item_ids is None:
+      missing_item_bodies.update(requested_item_ids)
       return
-    fetched_item_bodies[0] += count
-    logging.info('  Fetched %s/%s item bodies',
+    fetched_item_bodies[0] += len(found_item_ids)
+    missing_item_bodies.update(
+        set(requested_item_ids).difference(set(found_item_ids)))
+    logging.info('  Fetched %s/%s item bodies (%s could not be loaded)',
         '{:,}'.format(fetched_item_bodies[0]),
-        '{:,}'.format(item_bodies_to_fetch))
+        '{:,}'.format(item_bodies_to_fetch),
+        '{:,}'.format(len(missing_item_bodies)))
   base.worker.do_work(
       lambda: FetchWriteItemBodiesWorker(api, items_directory),
       item_ids_chunks,
       args.parallelism,
       report_progress=report_item_bodies_progress)
+
+  if missing_item_bodies:
+    logging.warn('Item bodies could not be loaded for: %s',
+        ', '.join([i.compact_form() for i in missing_item_bodies]))
 
   broadcast_stream_ids = [
       stream_id for stream_id in stream_ids
@@ -391,13 +400,13 @@ class FetchWriteItemBodiesWorker(base.worker.Worker):
 
     item_bodies_by_id = self._fetch_item_bodies(item_ids)
     if not item_bodies_by_id:
-      return 0
+      return []
 
     item_bodies_by_file_path = self._group_item_bodies(
       item_bodies_by_id.values())
     for file_path, item_bodies in item_bodies_by_file_path.items():
       self._write_item_bodies(file_path, item_bodies)
-    return len(item_bodies_by_id)
+    return item_bodies_by_id.keys()
 
   def _fetch_item_bodies(self, item_ids):
     def fetch(hifi=True):
@@ -416,20 +425,48 @@ class FetchWriteItemBodiesWorker(base.worker.Worker):
         return fetch()
       except urllib2.HTTPError, e:
         if e.code == 500:
-          logging.info('  500 response when fetching items, retrying with '
-              'high-fidelity output turned off')
+          logging.info('  500 response when fetching %d items, retrying with '
+              'high-fidelity output turned off', len(item_ids))
           return fetch(hifi=False)
         else:
-          logging.error('  HTTP exception when fetching items', exc_info=True)
+          logging.error('  HTTP error %d when fetching items: %s',
+              e.code, ",".join([i.compact_form() for i in item_ids]), e.read())
           return None
       except ET.ParseError, e:
-          logging.info('  XML parse error when fetching items, retrying with '
-              'high-fidelity turned off')
+          logging.info('  XML parse error when fetching %d items, retrying '
+              'with high-fidelity turned off', len(item_ids))
           return fetch(hifi=False)
+    except urllib2.HTTPError, e:
+      if e.code == 500 and len(item_ids) > 1:
+        logging.info('  500 response even with high-fidelity output turned '
+            'off, splitting %d chunk into two to find problematic items',
+            len(item_ids))
+        return self._fetch_item_bodies_split(item_ids)
+      else:
+        logging.error('  HTTP error %d when fetching %s items%s',
+            e.code, ",".join([i.compact_form() for i in item_ids]),
+            (': %s' % e.read()) if e.code != 500 else '')
+        return None
     except:
       logging.error('  Exception when fetching items %s',
           ",".join([i.compact_form() for i in item_ids]), exc_info=True)
       return None
+
+  def _fetch_item_bodies_split(self, item_ids):
+    split_point = int(len(item_ids)/2)
+    first_chunk = item_ids[0:split_point]
+    second_chunk = item_ids[split_point:]
+
+    result = {}
+    if first_chunk:
+      first_chunk_result = self._fetch_item_bodies(first_chunk)
+      if first_chunk_result:
+        result.update(first_chunk_result)
+    if second_chunk:
+      second_chunk_result = self._fetch_item_bodies(second_chunk)
+      if second_chunk_result:
+        result.update(second_chunk_result)
+    return result
 
   def _group_item_bodies(self, item_bodies):
     item_bodies_by_path = {}
