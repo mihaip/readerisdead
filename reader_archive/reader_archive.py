@@ -45,6 +45,9 @@ def main():
   parser.add_argument('--stream_items_chunk_size', type=int, default=10000,
                       help='Number of items refs to request per stream items '
                            'API call (higher is more efficient)')
+  parser.add_argument('--max_items_per_stream', type=int, default=0,
+                      help='If non-zero, will cap the number of items that are '
+                            'fetched per feed or tag')
   parser.add_argument('--item_bodies_chunk_size', type=int, default=250,
                       help='Number of items refs per request for fetching their '
                            'bodies (higher is more efficient)')
@@ -114,7 +117,8 @@ def main():
         stream_id,
         len(stream_ids) - fetched_stream_ids[0])
   item_refs_responses = base.worker.do_work(
-      lambda: FetchItemRefsWorker(api, args.stream_items_chunk_size),
+      lambda: FetchItemRefsWorker(
+          api, args.stream_items_chunk_size, args.max_items_per_stream),
       stream_ids,
       args.parallelism,
       report_progress=report_item_refs_progress)
@@ -349,9 +353,10 @@ def _load_additional_item_refs(
           item_refs_responses_by_stream_id[stream_id].extend(new_item_refs)
 
 class FetchItemRefsWorker(base.worker.Worker):
-  def __init__(self, api, chunk_size):
+  def __init__(self, api, chunk_size, max_items_per_stream):
     self._api = api
     self._chunk_size = chunk_size
+    self._max_items_per_stream = max_items_per_stream
 
   def work(self, stream_id):
     result = []
@@ -362,7 +367,7 @@ class FetchItemRefsWorker(base.worker.Worker):
           count=self._chunk_size,
           continuation_token=continuation_token)
       result.extend(item_refs)
-      if not continuation_token:
+      if not continuation_token or len(result) >= self._max_items_per_stream:
         break
     return result
 
