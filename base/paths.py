@@ -14,7 +14,7 @@ def normalize(path):
   return os.path.abspath(os.path.expanduser(path))
 
 _ESCAPE_CHARACTERS_RE = re.compile(r'([/:?&]+|%20)')
-_STREAM_ID_DISALLOWED_CHARACTERS_RE = re.compile(r'([^A-Za-z0-9\-._]+)')
+_STREAM_ID_DISALLOWED_CHARACTERS_RE = re.compile(r'([^A-Za-z0-9\-._/ :?&]+)')
 _TRIM_TRAILING_DASHES_RE = re.compile(r'-+$')
 
 def url_to_file_name(url, query_params=None, post_params=None):
@@ -54,9 +54,13 @@ def stream_id_to_file_name(stream_id):
     return "%s-%s" % (url_to_file_name(base.api.FEED_STREAM_ID_PREFIX),
       url_to_file_name(feed_url, query_params))
 
-  stream_id = stream_id.encode('ascii', 'ignore')
+  # Replace non-ASCII characters with dashes, but keep track of them, so that a
+  # unique filename can still be generated for each
+  disallowed_character_data = []
+  for d in _STREAM_ID_DISALLOWED_CHARACTERS_RE.findall(stream_id):
+    disallowed_character_data.append(d)
   stream_id = _STREAM_ID_DISALLOWED_CHARACTERS_RE.sub('-', stream_id)
-  return url_to_file_name(stream_id)
+  return url_to_file_name(stream_id, query_params=disallowed_character_data)
 
 
 def item_id_to_file_path(items_directory, item_id):
