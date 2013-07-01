@@ -36,7 +36,13 @@ class Api(object):
     user_info_json = self._fetch_json('user-info')
     return UserInfo(
       user_id=user_info_json['userId'],
-      email=user_info_json['userEmail'])
+      email=user_info_json['userEmail'],
+      profile_id=user_info_json['userProfileId'],
+      user_name=user_info_json['userName'],
+      public_user_name=user_info_json.get('publicUserName'),
+      is_blogger_user=user_info_json['isBloggerUser'],
+      signup_time_sec=user_info_json['signupTimeSec'],
+      is_multi_login_enabled=user_info_json['isMultiLoginEnabled'])
 
   def fetch_tags(self):
     tags_json = self._fetch_json('tag/list')
@@ -416,7 +422,24 @@ class Comment(collections.namedtuple(
   def from_json(comment_json):
     return Comment(**comment_json)
 
-UserInfo = collections.namedtuple('UserInfo', ['user_id', 'email'])
+class UserInfo(collections.namedtuple(
+    'UserInfo',
+    [
+      'user_id',
+      'email',
+      'profile_id',
+      'user_name',
+      'public_user_name',
+      'is_blogger_user',
+      'signup_time_sec',
+      'is_multi_login_enabled'
+    ])):
+  def to_json(self):
+    return self._asdict()
+
+  @staticmethod
+  def from_json(comment_json):
+    return UserInfo(**comment_json)
 
 class ItemRef(collections.namedtuple('ItemRef', ['item_id', 'timestamp_usec'])):
   def to_json(self):

@@ -262,6 +262,7 @@ def _save_preferences(api, data_directory):
   save(
       [g.to_json() for g in api.fetch_sharing_groups()], 'sharing-groups.json')
   save(api.fetch_sharing_acl().to_json(), 'sharing-acl.json')
+  save(api.fetch_user_info().to_json(), 'user-info.json')
 
 def _get_stream_ids(api, user_id, data_directory):
   def save_items(items, file_name):
