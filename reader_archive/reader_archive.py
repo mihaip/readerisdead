@@ -106,79 +106,13 @@ def main():
     stream_ids = stream_ids[:args.max_streams]
   logging.info('%d streams to fetch, gathering item refs:', len(stream_ids))
 
-  fetched_stream_ids = [0]
-  def report_item_refs_progress(stream_id, item_refs):
-    if item_refs is None:
-      logging.error('  Could not load item refs from %s', stream_id)
-      return
-    fetched_stream_ids[0] += 1
-    logging.info('  Loaded %s item refs from %s, %d streams left.',
-        '{:,}'.format(len(item_refs)),
-        stream_id,
-        len(stream_ids) - fetched_stream_ids[0])
-  item_refs_responses = base.worker.do_work(
-      lambda: FetchItemRefsWorker(
-          api, args.stream_items_chunk_size, args.max_items_per_stream),
-      stream_ids,
-      args.parallelism,
-      report_progress=report_item_refs_progress)
-
-  if args.additional_item_refs_file_path:
-    _load_additional_item_refs(
-        base.paths.normalize(args.additional_item_refs_file_path),
-        stream_ids,
-        item_refs_responses,
-        user_info.user_id)
-
-  item_ids = set()
-  known_item_ids_in_compact_form = set()
-  item_refs_total = 0
-  for stream_id, item_refs in itertools.izip(stream_ids, item_refs_responses):
-    if not item_refs:
-      continue
-    item_ids.update([item_ref.item_id for item_ref in item_refs])
-    item_refs_total += len(item_refs)
-
-    if stream_id == base.api.EXPLORE_STREAM_ID:
-      base.api.not_found_items_ids_to_ignore.update(
-          [i.item_id for i in item_refs])
-
-    stream = base.api.Stream(stream_id=stream_id, item_refs=item_refs)
-    stream_file_name = base.paths.stream_id_to_file_name(stream_id) + '.json'
-    stream_file_path = os.path.join(streams_directory, stream_file_name)
-    with open(stream_file_path, 'w') as stream_file:
-      stream_file.write(json.dumps(stream.to_json()))
-
-  item_ids = list(item_ids)
+  item_ids, item_refs_total = _fetch_and_save_item_refs(
+      stream_ids, api, args, streams_directory)
   logging.info('%s unique items refs (%s total), getting item bodies:',
       '{:,}'.format(len(item_ids)),
       '{:,}'.format(item_refs_total))
 
-  # We have two different chunking goals:
-  # - Fetch items in large-ish chunks (ideally 250), to minimize HTTP request
-  #   overhead per item
-  # - Write items in small-ish chunks (ideally around 10) per file, since having
-  #   a file per item is too annoying to deal with from a file-system
-  #   perspective. We also need the chunking into files to be deterministic, so
-  #   that from an item ID we know what file to look for it in.
-  # We therefore first chunk the IDs by file path, and then group those chunks
-  # into ID chunks that we fetch.
-  # We write the file chunks immediately after fetching to decrease the
-  # in-memory working set of the script.
-  item_ids_by_path = {}
-  for item_id in item_ids:
-    item_id_file_path = base.paths.item_id_to_file_path(
-        items_directory, item_id)
-    item_ids_by_path.setdefault(item_id_file_path, []).append(item_id)
-
-  current_item_ids_chunk = []
-  item_ids_chunks = [current_item_ids_chunk]
-  for item_ids_for_file_path in item_ids_by_path.values():
-    if len(current_item_ids_chunk) + len(item_ids_for_file_path) > \
-          args.item_bodies_chunk_size:
-      current_item_ids_chunk = []
-      item_ids_chunks.append(current_item_ids_chunk)
-    current_item_ids_chunk.extend(item_ids_for_file_path)
+  item_ids_chunks = _chunk_item_ids(item_ids, args.item_bodies_chunk_size)
 
   item_bodies_to_fetch = len(item_ids)
   fetched_item_bodies = [0]
@@ -363,6 +297,78 @@ def _load_additional_item_refs(
               stream_id,
               '{:,}'.format(alread_known_item_ref_count))
           item_refs_responses_by_stream_id[stream_id].extend(new_item_refs)
+
+def _fetch_and_save_item_refs(stream_ids, api, args, streams_directory):
+  fetched_stream_ids = [0]
+  def report_item_refs_progress(stream_id, item_refs):
+    if item_refs is None:
+      logging.error('  Could not load item refs from %s', stream_id)
+      return
+    fetched_stream_ids[0] += 1
+    logging.info('  Loaded %s item refs from %s, %d streams left.',
+        '{:,}'.format(len(item_refs)),
+        stream_id,
+        len(stream_ids) - fetched_stream_ids[0])
+  item_refs_responses = base.worker.do_work(
+      lambda: FetchItemRefsWorker(
+          api, args.stream_items_chunk_size, args.max_items_per_stream),
+      stream_ids,
+      args.parallelism,
+      report_progress=report_item_refs_progress)
+
+  if args.additional_item_refs_file_path:
+    _load_additional_item_refs(
+        base.paths.normalize(args.additional_item_refs_file_path),
+        stream_ids,
+        item_refs_responses,
+        user_info.user_id)
+
+  item_ids = set()
+  item_refs_total = 0
+  for stream_id, item_refs in itertools.izip(stream_ids, item_refs_responses):
+    if not item_refs:
+      continue
+    item_ids.update([item_ref.item_id for item_ref in item_refs])
+    item_refs_total += len(item_refs)
+
+    if stream_id == base.api.EXPLORE_STREAM_ID:
+      base.api.not_found_items_ids_to_ignore.update(
+          [i.item_id for i in item_refs])
+
+    stream = base.api.Stream(stream_id=stream_id, item_refs=item_refs)
+    stream_file_name = base.paths.stream_id_to_file_name(stream_id) + '.json'
+    stream_file_path = os.path.join(streams_directory, stream_file_name)
+    with open(stream_file_path, 'w') as stream_file:
+      stream_file.write(json.dumps(stream.to_json()))
+
+  return list(item_ids), item_refs_total
+
+def _chunk_item_ids(item_ids, chunk_size):
+  # We have two different chunking goals:
+  # - Fetch items in large-ish chunks (ideally 250), to minimize HTTP request
+  #   overhead per item
+  # - Write items in small-ish chunks (ideally around 10) per file, since having
+  #   a file per item is too annoying to deal with from a file-system
+  #   perspective. We also need the chunking into files to be deterministic, so
+  #   that from an item ID we know what file to look for it in.
+  # We therefore first chunk the IDs by file path, and then group those chunks
+  # into ID chunks that we fetch.
+  # We write the file chunks immediately after fetching to decrease the
+  # in-memory working set of the script.
+  item_ids_by_path = {}
+  for item_id in item_ids:
+    item_id_file_path = base.paths.item_id_to_file_path('', item_id)
+    item_ids_by_path.setdefault(item_id_file_path, []).append(item_id)
+
+  current_item_ids_chunk = []
+  item_ids_chunks = [current_item_ids_chunk]
+  for item_ids_for_file_path in item_ids_by_path.values():
+    if len(current_item_ids_chunk) + len(item_ids_for_file_path) > chunk_size:
+      current_item_ids_chunk = []
+      item_ids_chunks.append(current_item_ids_chunk)
+    current_item_ids_chunk.extend(item_ids_for_file_path)
+
+  return item_ids_chunks
 
 class FetchItemRefsWorker(base.worker.Worker):
   def __init__(self, api, chunk_size, max_items_per_stream):

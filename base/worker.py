@@ -10,7 +10,7 @@ def do_work(worker_creator, requests, parallelism, report_progress=None):
     thread.start()
 
   for request_index, request in enumerate(requests):
-    request_queue.put((request, request_index))
+    request_queue.put((request, request_index, False))
 
   responses = [None] * len(requests)
   for i in xrange(len(requests)):
@@ -19,6 +19,9 @@ def do_work(worker_creator, requests, parallelism, report_progress=None):
     response_queue.task_done()
     if report_progress:
       report_progress(requests[request_index], response)
+
+  for i in xrange(parallelism):
+    request_queue.put((None, -1, True))
 
   return responses
 
@@ -33,10 +36,17 @@ class WorkerThread(threading.Thread):
     self._response_queue = response_queue
     self._worker = worker
     self.daemon = True
+    self._stopped = False
 
   def run(self):
-    while True:
-      request, request_index = self._request_queue.get()
+    while not self._stopped:
+      self._service_request()
+
+  def _service_request(self):
+      request, request_index, should_stop = self._request_queue.get()
+      if should_stop:
+        self._stopped = True
+        return
       try:
         response = self._worker.work(request)
       except:

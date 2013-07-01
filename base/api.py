@@ -470,14 +470,29 @@ class Stream(collections.namedtuple('Stream', ['stream_id', 'item_refs'])):
           in stream_json['item_refs'].iteritems()
         ])
 
-# See https://code.google.com/p/google-reader-api/wiki/ItemId for the two forms
-# item IDs.
-class ItemId(collections.namedtuple('ItemId', ['decimal_form', 'atom_form'])):
+class ItemId(collections.namedtuple('ItemId', ['int_form'])):
   def to_json(self):
     return self.compact_form()
 
   def compact_form(self):
-    return self.atom_form[len(_ITEM_ID_ATOM_FORM_PREFIX):]
+    compact_form = hex(self.int_form)[2:]
+    if compact_form.endswith('L'):
+      compact_form = compact_form[:-1]
+    compact_form = (16 - len(compact_form)) * '0' + compact_form
+    return compact_form
+
+  # See https://code.google.com/p/google-reader-api/wiki/ItemId for the two forms
+  # item IDs.
+  @property
+  def decimal_form(self):
+    if self.int_form > 1 << 63:
+      return str(self.int_form - (1 << 64))
+    else:
+      return str(self.int_form)
+
+  @property
+  def atom_form(self):
+    return _ITEM_ID_ATOM_FORM_PREFIX + self.compact_form()
 
   @staticmethod
   def from_json(item_id_json):
@@ -487,24 +502,13 @@ def item_id_from_decimal_form(decimal_form):
   int_form = int(decimal_form)
   if int_form < 0:
     int_form += 1 << 64
-  hex_form = hex(int_form)[2:]
-  if hex_form.endswith('L'):
-    hex_form = hex_form[:-1]
-  atom_form = _ITEM_ID_ATOM_FORM_PREFIX + (16 - len(hex_form)) * '0' + hex_form
-  return ItemId(decimal_form=decimal_form, atom_form=atom_form)
+  return ItemId(int_form=int_form)
 
 def item_id_from_atom_form(atom_form):
   return item_id_from_compact_form(atom_form[len(_ITEM_ID_ATOM_FORM_PREFIX):])
 
 def item_id_from_compact_form(compact_form):
-  int_form = int(compact_form, 16)
-  if int_form > 1 << 63:
-    decimal_form = str(int_form - (1 << 64))
-  else:
-    decimal_form = str(int_form)
-  return ItemId(
-      decimal_form=decimal_form,
-      atom_form=_ITEM_ID_ATOM_FORM_PREFIX + compact_form)
+  return ItemId(int_form=int(compact_form, 16))
 
 def item_id_from_any_form(form):
   if form.startswith(_ITEM_ID_ATOM_FORM_PREFIX):
