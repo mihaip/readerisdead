@@ -107,7 +107,7 @@ def main():
   logging.info('%d streams to fetch, gathering item refs:', len(stream_ids))
 
   item_ids, item_refs_total = _fetch_and_save_item_refs(
-      stream_ids, api, args, streams_directory)
+      stream_ids, api, args, streams_directory, user_info.user_id)
   logging.info('%s unique items refs (%s total), getting item bodies:',
       '{:,}'.format(len(item_ids)),
       '{:,}'.format(item_refs_total))
@@ -298,7 +298,8 @@ def _load_additional_item_refs(
               '{:,}'.format(alread_known_item_ref_count))
           item_refs_responses_by_stream_id[stream_id].extend(new_item_refs)
 
-def _fetch_and_save_item_refs(stream_ids, api, args, streams_directory):
+def _fetch_and_save_item_refs(
+    stream_ids, api, args, streams_directory, user_id):
   fetched_stream_ids = [0]
   def report_item_refs_progress(stream_id, item_refs):
     if item_refs is None:
@@ -321,7 +322,7 @@ def _fetch_and_save_item_refs(stream_ids, api, args, streams_directory):
         base.paths.normalize(args.additional_item_refs_file_path),
         stream_ids,
         item_refs_responses,
-        user_info.user_id)
+        user_id)
 
   item_ids = set()
   item_refs_total = 0
