@@ -14,6 +14,7 @@ def normalize(path):
   return os.path.abspath(os.path.expanduser(path))
 
 _ESCAPE_CHARACTERS_RE = re.compile(r'([/:?&]+|%20)')
+_STREAM_ID_DISALLOWED_CHARACTERS_RE = re.compile(r'([^A-Za-z0-9\-._]+)')
 _TRIM_TRAILING_DASHES_RE = re.compile(r'-+$')
 
 def url_to_file_name(url, query_params=None, post_params=None):
@@ -53,6 +54,8 @@ def stream_id_to_file_name(stream_id):
     return "%s-%s" % (url_to_file_name(base.api.FEED_STREAM_ID_PREFIX),
       url_to_file_name(feed_url, query_params))
 
+  stream_id = stream_id.encode('ascii', 'ignore')
+  stream_id = _STREAM_ID_DISALLOWED_CHARACTERS_RE.sub('-', stream_id)
   return url_to_file_name(stream_id)
 
 
