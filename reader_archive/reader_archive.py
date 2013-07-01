@@ -185,11 +185,13 @@ def main():
   missing_item_bodies = set()
   def report_item_bodies_progress(requested_item_ids, found_item_ids):
     if found_item_ids is None:
-      missing_item_bodies.update(requested_item_ids)
+      missing_item_bodies.update(requested_item_ids.difference(
+          base.api.not_found_items_ids_to_ignore))
       return
     fetched_item_bodies[0] += len(found_item_ids)
     missing_item_bodies.update(
-        set(requested_item_ids).difference(set(found_item_ids)))
+        set(requested_item_ids).difference(set(found_item_ids)).difference(
+            base.api.not_found_items_ids_to_ignore))
     logging.info('  Fetched %s/%s item bodies (%s could not be loaded)',
         '{:,}'.format(fetched_item_bodies[0]),
         '{:,}'.format(item_bodies_to_fetch),
