@@ -119,7 +119,7 @@ class FeedFetchWorker(base.worker.Worker):
       try:
         try:
           self._fetch(request)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
           # Reader's MediaRSS reconstruction code appears to have a bug for some
           # feeds (it causes an exception to be thrown), so we retry with
           # MediaRSS turned off before giving up.
@@ -129,11 +129,11 @@ class FeedFetchWorker(base.worker.Worker):
             self._fetch(request, media_rss=False)
           else:
             response.is_success = False
-        except ET.ParseError, e:
+        except ET.ParseError as e:
             logging.warn('XML parse error when fetching %s, '
               'retrying with MediaRSS turned off', request.feed_url)
             self._fetch(request, media_rss=False)
-      except ET.ParseError, e:
+      except ET.ParseError as e:
             logging.warn('XML parse error when fetching %s, retrying with '
                 'MediaRSS and high-fidelity turned off', request.feed_url)
             self._fetch(request, media_rss=False, hifi=False)

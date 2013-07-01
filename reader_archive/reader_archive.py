@@ -386,7 +386,7 @@ class FetchItemRefsWorker(base.worker.Worker):
             stream_id,
             count=self._chunk_size,
             continuation_token=continuation_token)
-      except urllib2.HTTPError, e:
+      except urllib2.HTTPError as e:
         if e.code == 400 and "Permission denied" in e.read():
           logging.warn("  Permission denied when getting items for the stream "
               "%s, it's most likely private now.", stream_id)
@@ -433,7 +433,7 @@ class FetchWriteItemBodiesWorker(base.worker.Worker):
     try:
       try:
         return fetch()
-      except urllib2.HTTPError, e:
+      except urllib2.HTTPError as e:
         if e.code == 500:
           logging.info('  500 response when fetching %d items, retrying with '
               'high-fidelity output turned off', len(item_ids))
@@ -442,11 +442,11 @@ class FetchWriteItemBodiesWorker(base.worker.Worker):
           logging.error('  HTTP error %d when fetching items: %s',
               e.code, ",".join([i.compact_form() for i in item_ids]), e.read())
           return None
-      except ET.ParseError, e:
+      except ET.ParseError as e:
           logging.info('  XML parse error when fetching %d items, retrying '
               'with high-fidelity turned off', len(item_ids))
           return fetch(hifi=False)
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
       if e.code == 500 and len(item_ids) > 1:
         logging.info('  500 response even with high-fidelity output turned '
             'off, splitting %d chunk into two to find problematic items',

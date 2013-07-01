@@ -20,7 +20,7 @@ class RetryingUrlFetcher(UrlFetcher):
     for i in xrange(0, self._retry_count):
       try:
         return self._url_fetcher.fetch(url, post_data)
-      except urllib2.URLError, e:
+      except urllib2.URLError as e:
         if i == self._retry_count - 1:
           raise
         else:
@@ -62,7 +62,7 @@ class ClientLoginUrlFetcher(UrlFetcher):
           self._auth_token = value
           break
       auth_response.close()
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
       logging.error(
           'Error response while fetching authentication token: %s %s',
           e.code, e.message)
