@@ -108,9 +108,11 @@ def main():
 
   item_ids, item_refs_total = _fetch_and_save_item_refs(
       stream_ids, api, args, streams_directory, user_info.user_id)
-  logging.info('%s unique items refs (%s total), getting item bodies:',
+  logging.info('%s unique items refs (%s total), grouping by chunk.',
       '{:,}'.format(len(item_ids)),
       '{:,}'.format(item_refs_total))
+
+  logging.info('Grouped item refs, getting item bodies:')
 
   item_ids_chunks = _chunk_item_ids(item_ids, args.item_bodies_chunk_size)
 
@@ -324,6 +326,9 @@ def _fetch_and_save_item_refs(
         item_refs_responses,
         user_id)
 
+  logging.info('Saving item refs for %d streams',
+      len([i for i in item_refs_responses if i is not None]))
+
   item_ids = set()
   item_refs_total = 0
   for stream_id, item_refs in itertools.izip(stream_ids, item_refs_responses):
@@ -372,6 +377,7 @@ def _chunk_item_ids(item_ids, chunk_size):
   return item_ids_chunks
 
 class FetchItemRefsWorker(base.worker.Worker):
+  _PROGRESS_REPORT_INTERVAL = 50000
   def __init__(self, api, chunk_size, max_items_per_stream):
     self._api = api
     self._chunk_size = chunk_size
@@ -380,6 +386,7 @@ class FetchItemRefsWorker(base.worker.Worker):
   def work(self, stream_id):
     result = []
     continuation_token = None
+    next_progress_report = FetchItemRefsWorker._PROGRESS_REPORT_INTERVAL
     while True:
       try:
         item_refs, continuation_token = self._api.fetch_item_refs(
@@ -387,13 +394,17 @@ class FetchItemRefsWorker(base.worker.Worker):
             count=self._chunk_size,
             continuation_token=continuation_token)
       except urllib2.HTTPError as e:
-        if e.code == 400 and "Permission denied" in e.read():
-          logging.warn("  Permission denied when getting items for the stream "
-              "%s, it's most likely private now.", stream_id)
+        if e.code == 400 and 'Permission denied' in e.read():
+          logging.warn('  Permission denied when getting items for the stream '
+              '%s, it\'s most likely private now.', stream_id)
           return None
         else:
           raise
       result.extend(item_refs)
+      if len(result) >= next_progress_report:
+        logging.debug('  %s item refs fetched so far from %s',
+            '{:,}'.format(len(result)), stream_id)
+        next_progress_report += FetchItemRefsWorker._PROGRESS_REPORT_INTERVAL
       if not continuation_token or (self._max_items_per_stream and
           len(result) >= self._max_items_per_stream):
         break
@@ -440,7 +451,7 @@ class FetchWriteItemBodiesWorker(base.worker.Worker):
           return fetch(hifi=False)
         else:
           logging.error('  HTTP error %d when fetching items: %s',
-              e.code, ",".join([i.compact_form() for i in item_ids]), e.read())
+              e.code, ','.join([i.compact_form() for i in item_ids]), e.read())
           return None
       except ET.ParseError as e:
           logging.info('  XML parse error when fetching %d items, retrying '
@@ -454,12 +465,12 @@ class FetchWriteItemBodiesWorker(base.worker.Worker):
         return self._fetch_item_bodies_split(item_ids)
       else:
         logging.error('  HTTP error %d when fetching %s items%s',
-            e.code, ",".join([i.compact_form() for i in item_ids]),
+            e.code, ','.join([i.compact_form() for i in item_ids]),
             (': %s' % e.read()) if e.code != 500 else '')
         return None
     except:
       logging.error('  Exception when fetching items %s',
-          ",".join([i.compact_form() for i in item_ids]), exc_info=True)
+          ','.join([i.compact_form() for i in item_ids]), exc_info=True)
       return None
 
   def _fetch_item_bodies_split(self, item_ids):
