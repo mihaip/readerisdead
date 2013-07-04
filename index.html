@@ -18,7 +18,7 @@
 
       <header>
         <h1>Reader is Dead</h1>
-        <p>A collection of tools to help with the impending Google Reader shutdown</p>
+        <p>A collection of tools to help with the Google Reader shutdown</p>
       </header>
 
       <div id="banner">
@@ -45,39 +45,6 @@
 <p>All tools are written in Python and have been tested with Python 2.7 on Mac OS X 10.8. To install them, download either the <a href="https://github.com/mihaip/readerisdead/zipball/master"><code>.zip</code></a> or <a href="https://github.com/mihaip/readerisdead/tarball/master"><code>.tar</code></a> archive. Expand the archive, and then open the resulting directory in your terminal. Command lines to invoke specific tools are listed below.</p>
 
 <p>On Windows, you'll probably need to <a href="http://www.python.org/download/">download Python</a> first. Then right-click the folder that you got when you expanded the <code>.zip</code>, and choose "Open command window here". Once you have a command-line, you can run the same scripts that are mentioned below, but add a <code>.bat</code> extension to the script name (e.g. <code>bin\reader_archive.bat</code> instead of <code>bin/reader_archive</code>).</p>
-
-<h2>
-<a name="reader_archive" class="anchor" href="#reader_archive"><span class="octicon octicon-link"></span></a>reader_archive</h2>
-
-<p><em>Comprehensive archive of a Google Reader account.</em></p>
-
-<p>Unlike Google Reader's <a href="http://googlesystem.blogspot.com/2012/11/export-google-reader-data-in-google.html">Takeout support</a>, provides a complete archive of a Reader account's data. This includes:</p>
-
-<ul>
-<li>All your read items</li>
-<li>All your starred items</li>
-<li>All your tagged items</li>
-<li>All your shared items</li>
-<li>All the shared items from the people you were following.</li>
-<li>All the comments on shared items</li>
-<li>All your liked items</li>
-<li>All items you've kept unread, emailed, read on your phone, clicked on or otherwise <a href="http://googlesystem.blogspot.com/2008/03/explore-your-interactions-with-google.html">interacted</a> with.</li>
-<li>All items that have appeared in one of your subscriptions</li>
-<li>All items that were recommended to you</li>
-<li>All items in the (English) "Explore" section</li>
-<li>All the profiles of the people you were following before the <a href="http://googlereader.blogspot.com/2011/10/new-in-reader-fresh-design-and-google.html">sharepocalypse</a>.</li>
-<li>All your preferences.</li>
-</ul><p>To use it:</p>
-
-<pre><code>bin/reader_archive --output_directory=~/Downloads/reader_archive
-</code></pre>
-
-<p>A browser window will appear asking you to authorize the app. Once you do, you'll be given a code to paste back into the terminal (you can also use the <code>--use_client_login</code> flag to instead be prompted for your Google Account username and password). See
-<a href="https://github.com/mihaip/readerisdead/wiki/reader_archive-Format">this wiki page</a> for an explanation of the archive format. The intent is to be comprehensive, such that other tools that use the archive data may be created.</p>
-
-<p>The archiving process can take a while, depending on the size of your account
-and your internet connection. For an account with 300,000 read items, the
-process took about 10 minutes and generated 1 GB of data.</p>
 
 <h2>
 <a name="reader_browser" class="anchor" href="#reader_browser"><span class="octicon octicon-link"></span></a>reader_browser</h2>
@@ -110,33 +77,16 @@ process took about 10 minutes and generated 1 GB of data.</p>
 <p>The tool will then list all of the streams that the item appears in, the item body, and any comments made on that item. You can provide multiple item IDs (as additional command line arguments).</p>
 
 <h2>
-<a name="feed_archive" class="anchor" href="#feed_archive"><span class="octicon octicon-link"></span></a>feed_archive</h2>
+<a name="archived-tools" class="anchor" href="#archived-tools"><span class="octicon octicon-link"></span></a>Archived Tools</h2>
 
-<p><em>Saves public feed data from Google Reader's feed archive.</em></p>
+<p>Now that Google Reader has been shut down, some of the initial tools (focused on getting the data out) are no longer useful. They were:</p>
 
-<p>Google Reader has (for the most part) a copy of all blog posts and other feed items published since its launch in late 2005 (assuming that at least one Reader user subscribed to the feed). This makes it an invaluable resource for sites <a href="http://whytheluckystiff.net/">that</a> <a href="http://www.diveintomark.org/">disappear</a>, can serve as a <a href="http://wordpress.org/support/topic/whole-tables-gone-missing-from-db-hacked#post-1326219">backup mechanism</a> and enables <a href="http://www.streamspigot.com/feed-playback/">tools</a> to be created.</p>
-
-<p>Presumably access to this data is also going away come July 2013, and thus this tool can be used to get one last shot at archiving feeds you might want to refer to later.</p>
-
-<p>The easiest way to use it is get the <a href="http://www.google.com/reader/subscriptions/export">OPML file</a> with all your Reader subscriptions, and run it like so:</p>
-
-<pre><code>bin/feed_archive \
-    --opml_file=~/Downloads/feeds.opml \
-    --output_directory=~/Downloads/feed_archive
-</code></pre>
-
-<p>The destination specified by <code>--output_directory</code> will be populated with one file per feed, named after its URL. The file contains all items that Reader ever saw in that feed, in the <a href="http://www.ietf.org/rfc/rfc4287">Atom</a> format. Google Reader normally omits unknown (namespaced) elements in its API output, but in the script makes an attempt to use <a href="https://groups.google.com/forum/?fromgroups#!topic/fougrapi/Rab23a9jhzc">high-fidelity mode</a> to reconstruct the original data as much as possible.</p>
-
-<p>If you have specific feeds you'd like to save the archive for, instead of <code>--opml_file</code> you can also pass in feed URLs as command line arguments:</p>
-
-<pre><code>bin/feed_archive \
-    --output_directory=~/Downloads/feed_archive \
-    http://googlereader.blogspot.com/atom.xml \
-    http://persistent.info/atom.xml \
-    ...
-</code></pre>
-
-<p>The tool supports additional arguments for controlling how many items are fetched, see <code>bin/feed_archive --help</code> for more information.</p>
+<ul>
+<li>
+<a href="https://github.com/mihaip/readerisdead/wiki/reader_archive"><code>reader_archive</code></a>: Saved a comprehensive archive of a Google Reader account.</li>
+<li>
+<a href="https://github.com/mihaip/readerisdead/wiki/feed_archive"><code>feed_archive</code></a>: Saved public feed data from Google Reader's feed cache.</li>
+</ul>
       </section>
       <footer>
         <p>Project maintained by <a href="https://github.com/mihaip">mihaip</a></p>
