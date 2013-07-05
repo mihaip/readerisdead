@@ -87,3 +87,20 @@ class PreferenceList(ApiHandler):
         } for id, value in preferences_json.iteritems()
       ]
     })
+
+
+class StreamPreferenceList(ApiHandler):
+  def GET(self):
+    stream_preferences_json = self._read_json_data_file(
+        'stream-preferences.json')
+
+    return json.dumps({
+      'streamprefs': {
+        stream_id: [
+          {
+            'id': id,
+            'value': value,
+          } for id, value in prefs.iteritems()
+        ] for stream_id, prefs in stream_preferences_json.iteritems()
+      }
+    })

@@ -29,6 +29,7 @@ urls = (
     '/reader/api/0/tag/list', 'api_handlers.TagList',
     '/reader/api/0/recommendation/list', 'api_handlers.RecommendationList',
     '/reader/api/0/preference/list', 'api_handlers.PreferenceList',
+    '/reader/api/0/preference/stream/list', 'api_handlers.StreamPreferenceList',
 
     # Stubbed-out handlers
     '/reader/logging', 'StubbedOut',
