@@ -21,19 +21,19 @@ class SubscriptionList(ApiHandler):
         base.api.Subscription.from_json(s) for s in subscriptions_json]
 
     return json.dumps({
-      "subscriptions": [
+      'subscriptions': [
         {
-          "id": s.stream_id,
-          "title": s.title,
-          "categories": [
+          'id': s.stream_id,
+          'title': s.title,
+          'categories': [
             {
-              "id": si,
-              "label": si[si.rfind('/') + 1:],
+              'id': si,
+              'label': si[si.rfind('/') + 1:],
             } for si in s.insert_stream_ids
           ],
-          "sortid": s.sort_id,
-          "firstitemmsec": str(int(s.first_item_usec/1000)),
-          "htmlUrl": s.html_url,
+          'sortid': s.sort_id,
+          'firstitemmsec': str(int(s.first_item_usec/1000)),
+          'htmlUrl': s.html_url,
         } for s in subscriptions
       ]
     })
@@ -45,10 +45,31 @@ class TagList(ApiHandler):
     tags = [base.api.Tag.from_json(t) for t in tags_json]
 
     return json.dumps({
-      "tags": [
+      'tags': [
         {
-          "id": t.stream_id,
-          "sortid": t.sort_id,
+          'id': t.stream_id,
+          'sortid': t.sort_id,
         } for t in tags
+      ]
+    })
+
+
+class RecommendationList(ApiHandler):
+  def GET(self):
+    recommendations_json = self._read_json_data_file('recommendations.json')
+    recommendations = [
+        base.api.Recommendation.from_json(r) for r in recommendations_json]
+    count = int(web.input(n=4).n)
+    if count < len(recommendations):
+      recommendations = recommendations[:count]
+
+    return json.dumps({
+      'recs': [
+        {
+          'streamId': r.stream_id,
+          'title': r.title,
+          'snippet': '',
+          'impressionTime': 0,
+        } for r in recommendations
       ]
     })

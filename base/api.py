@@ -409,6 +409,10 @@ class Recommendation(collections.namedtuple('Recommendation',
   def to_json(self):
     return self._asdict()
 
+  @staticmethod
+  def from_json(recommendation_json):
+    return Recommendation(**recommendation_json)
+
 class Comment(collections.namedtuple(
     'Comment',
     [
