@@ -326,6 +326,10 @@ class Tag(collections.namedtuple('Tag', ['stream_id', 'sort_id'])):
   def to_json(self):
     return self._asdict()
 
+  @staticmethod
+  def from_json(tag_json):
+    return Tag(**tag_json)
+
 class Subscription(collections.namedtuple(
     'Subscription',
     ['stream_id', 'title', 'sort_id', 'first_item_usec', 'html_url',
@@ -334,8 +338,8 @@ class Subscription(collections.namedtuple(
     return self._asdict()
 
   @staticmethod
-  def from_json(comment_json):
-    return Subscription(**comment_json)
+  def from_json(subscription_json):
+    return Subscription(**subscription_json)
 
 class Friend(collections.namedtuple(
     'Friend',

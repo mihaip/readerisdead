@@ -26,6 +26,7 @@ urls = (
 
     # API handlers
     '/reader/api/0/subscription/list', 'api_handlers.SubscriptionList',
+    '/reader/api/0/tag/list', 'api_handlers.TagList',
 
     # Stubbed-out handlers
     '/reader/logging', 'StubbedOut',
