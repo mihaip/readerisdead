@@ -1,10 +1,13 @@
 import json
 import logging
 import os.path
+import urllib
 
 import third_party.web as web
 
 import base.api
+import base.atom
+import base.paths
 
 class ApiHandler:
   def _read_json_data_file(self, data_file_name):
@@ -117,3 +120,72 @@ class UnreadCount(ApiHandler):
         } for stream_id, stream in web.config.streams_by_stream_id.iteritems()
       ]
     })
+
+
+class StreamContents(ApiHandler):
+  def GET(self, stream_id):
+    stream_id = urllib.unquote_plus(stream_id)
+    stream = web.config.streams_by_stream_id.get(stream_id)
+    if not stream:
+      return web.notfound('Stream ID %s was not archived' % stream_id)
+    input = web.input(n=20, c=0)
+    count = int(input.n)
+    continuation = int(input.c)
+    item_refs = stream.item_refs[continuation:continuation + count]
+    item_refs_by_item_id = {i.item_id: i for i in item_refs}
+
+    item_entries = []
+    for item_ref in item_refs:
+      item_id = item_ref.item_id
+      item_body_path = base.paths.item_id_to_file_path(
+          os.path.join(web.config.reader_archive_directory, 'items'), item_id)
+      if os.path.exists(item_body_path):
+        with open(item_body_path) as item_body_file:
+          feed = base.atom.parse(item_body_file)
+          found_entry = False
+          for entry in feed.entries:
+            if entry.item_id == item_id:
+              item_entries.append(entry)
+              found_entry = True
+              break
+          if not found_entry:
+            logging.warning('Did not find item entry for %s', item_id)
+      else:
+        logging.warning('No item body file entry for %s', item_id)
+
+    response_json = {
+      'direction': 'ltr',
+      'id': stream_id,
+      'title': '', # TODO
+      'items': [
+        {
+          'id': e.item_id.atom_form,
+          'crawlTimeMsec': str(int(
+              item_refs_by_item_id[e.item_id].timestamp_usec/1000)),
+          'timestampUsec': str(item_refs_by_item_id[e.item_id].timestamp_usec),
+          'published': 0, # TODO
+          'updated': 0, # TODO
+          'title': e.title,
+          'content': {
+            # Unfortunately Atom output did not appear to contain writing
+            # direction.
+            'direction': 'ltr',
+            'content': e.content,
+          },
+          'categories': [], # TODO
+          'origin': {
+            'streamId': e.origin.stream_id,
+            'title': e.origin.title,
+            'htmlUrl': e.origin.html_url,
+          },
+          'annotations': [], # TODO
+          'comments': [],
+          'likingUsers': [],
+        } for e in item_entries
+      ],
+    }
+
+    if continuation + count < len(stream.item_refs):
+      response_json['continuation'] = continuation + count
+
+    return json.dumps(response_json)

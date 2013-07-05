@@ -1,4 +1,5 @@
 import collections
+import logging
 import xml.etree.cElementTree as ET
 
 import base.api
@@ -25,9 +26,42 @@ def parse(xml_text_or_file):
   for entry_element in entry_elements:
     item_id = base.api.item_id_from_atom_form(
         entry_element.find('{%s}id' % ATOM_NS).text)
-    entries.append(Entry(item_id=item_id, element=entry_element))
+    title = entry_element.find('{%s}title' % ATOM_NS).text
+
+    content_element = entry_element.find('{%s}content' % ATOM_NS)
+    if content_element is None:
+      content_element = entry_element.find('{%s}summary' % ATOM_NS)
+    content = content_element.text if content_element is not None else ''
+
+    source_element = entry_element.find('{%s}source' % ATOM_NS)
+    source_link_element = source_element.find('{%s}link' % ATOM_NS)
+    origin_html_url = source_link_element.attrib['href'] \
+        if source_link_element is not None else None
+    origin = Origin(
+      stream_id=source_element.attrib['{%s}stream-id' % READER_NS],
+      title=source_element.find('{%s}title' % ATOM_NS).text,
+      html_url=origin_html_url,
+    )
+
+    entries.append(Entry(
+      item_id=item_id,
+      title=title,
+      content=content,
+      element=entry_element,
+      origin=origin,
+    ))
   return Feed(entries=entries)
 
 Feed = collections.namedtuple('Feed', ['entries'])
 
-Entry = collections.namedtuple('Entry', ['item_id', 'element'])
+Entry = collections.namedtuple('Entry', [
+    # Extracted attributes
+    'item_id',
+    'title',
+    'content',
+    'origin',
+
+    # ElementTree element
+    'element'])
+
+Origin = collections.namedtuple('Origin', ['stream_id', 'title', 'html_url'])

@@ -33,6 +33,7 @@ urls = (
     '/reader/api/0/preference/list', 'api_handlers.PreferenceList',
     '/reader/api/0/preference/stream/list', 'api_handlers.StreamPreferenceList',
     '/reader/api/0/unread-count', 'api_handlers.UnreadCount',
+    '/reader/api/0/stream/contents/(.+)', 'api_handlers.StreamContents',
 
     # Stubbed-out handlers
     '/reader/logging', 'StubbedOut',

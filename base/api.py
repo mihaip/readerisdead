@@ -472,15 +472,15 @@ class Stream(collections.namedtuple('Stream', ['stream_id', 'item_refs'])):
 
   @staticmethod
   def from_json(stream_json):
-    return Stream(
-        stream_id=stream_json['stream_id'],
-        item_refs=[
-          ItemRef(
-              item_id=ItemId.from_json(item_id_json),
-              timestamp_usec=timestamp_usec
-          ) for item_id_json, timestamp_usec
-          in stream_json['item_refs'].iteritems()
-        ])
+    item_refs = [
+      ItemRef(
+          item_id=ItemId.from_json(item_id_json),
+          timestamp_usec=timestamp_usec
+      ) for item_id_json, timestamp_usec
+      in stream_json['item_refs'].iteritems()
+    ]
+    item_refs = sorted(item_refs, key=lambda i: i.timestamp_usec, reverse=True)
+    return Stream(stream_id=stream_json['stream_id'], item_refs=item_refs)
 
 class ItemId(collections.namedtuple('ItemId', ['int_form'])):
   def to_json(self):
