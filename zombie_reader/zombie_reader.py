@@ -15,14 +15,15 @@ _STATIC_DIRECTORY = os.path.abspath(os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "static"))
 
 urls = (
-    '/', 'Index',
+    '/', 'RedirectToMain',
+    '/reader/view', 'RedirectToMain',
     '/reader/view/', 'Main',
     '/reader/logging', 'Logging',
     '/reader/overview', 'Overview',
 )
 render = web.template.render('zombie_reader/templates/')
 
-class Index:
+class RedirectToMain:
   def GET(self):
     raise web.redirect('/reader/view/')
 
@@ -60,7 +61,7 @@ def main():
 
   app = web.application(urls, globals())
 
-  homepage_url = "http://%s:%d/" % (socket.gethostname(), args.port)
+  homepage_url = "http://%s:%d/reader/view/" % (socket.gethostname(), args.port)
   logging.info("Serving at %s", homepage_url)
   webbrowser.open_new_tab(homepage_url)
 
