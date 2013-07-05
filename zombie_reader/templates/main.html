@@ -38,26 +38,8 @@ function DumpError(m) {}
 _HAS_GPLUS_ENABLED = true;
 _IS_DEBUG_IP = false;
 _ON_LOGIN_PROMOTION = null;
-function displayLoadingError() {
-function setDisplay(id, display) {
-var node = document.getElementById(id);
-if (node) {
-node.style.display = display;
-}
-}
-setDisplay('loading-error', '');
-setDisplay('main', 'none');
-setDisplay('top-bar', 'none');
-}
-var _STUCK_TIMEOUT = window.setTimeout(function() {
-new Image().src =
-"/reader/js-load-error" +
-"?src=" + encodeURIComponent("/reader/ui/3564210627-en-scroll.js?hl\x3den") +
-"&u=" + encodeURIComponent("14548369432350969777") +
-"&type=" + encodeURIComponent("stuck") +
-"&ck=" + (new Date().getTime());
-displayLoadingError();
-}, 30000);</script>
+_STUCK_TIMEOUT = 0;
+</script>
 <link type="text/css" rel="stylesheet" href="/reader/ui/gbar.css">
 <link type="text/css" rel="stylesheet" href="/reader/ui/2139832829-en-scroll.css?hl=en">
 <link type="text/css" rel="stylesheet" href="/reader/ui/2159580021-en-scroll_large_density.css?hl=en">
@@ -120,17 +102,8 @@ topBar.className += ' jfk';
 
 </div></div></div></div>
 <script type="text/javascript" src="/reader/ui/3564210627-en-scroll.js?hl=en"></script>
-<script type="text/javascript">if (!("_FR_scrollMain" in window)) {
-window.clearTimeout(_STUCK_TIMEOUT);
-new Image().src =
-"/reader/js-load-error" +
-"?src=" + encodeURIComponent("/reader/ui/3564210627-en-scroll.js?hl\x3den") +
-"&u=" + encodeURIComponent("14548369432350969777") +
-"&type=" + encodeURIComponent("no-js") +
-"&ck=" + (new Date().getTime());
-displayLoadingError();
-}
-""; var _STREAM_LIST_UNREAD_COUNTS =
+<script type="text/javascript">
+var _STREAM_LIST_UNREAD_COUNTS =
 {max:1000,unreadcounts:[{id:"feed/http://blog.golang.org/feeds/posts/default",count:3},{id:"feed/http://feeds.feedburner.com/DilbertDailyStrip",count:19},{id:"feed/http://speirs.org/blog/atom.xml",count:1},{id:"feed/http://www.blowery.org/blog/SyndicationService.asmx/GetRss",count:1},{id:"feed/http://feeds.penny-arcade.com/pa-mainsite/",count:51},{id:"user/14548369432350969777/label/designers",count:3},{id:"feed/http://www.damninteresting.com/feed/",count:1},{id:"feed/http://feeds.feedburner.com/nczonline",
 count:1},{id:"feed/http://ariya.ofilabs.com/feed",count:7},{id:"feed/http://feeds.feedburner.com/dailyjs",count:19},{id:"feed/http://taras.glek.net/atom.xml",count:1},{id:"feed/http://feeds.feedburner.com/GoogleOperatingSystem",count:22},{id:"feed/http://feeds.feedburner.com/GoogleOpenSourceBlog",count:6},{id:"user/14548369432350969777/label/fun",count:46},{id:"user/14548369432350969777/label/ex-googlers",count:10},{id:"feed/http://mjtsai.com/blog/feed/rss2/",count:21},{id:"user/14548369432350969777/label/mac",
 count:180},{id:"feed/http://engineering.foursquare.com/feed/",count:1},{id:"user/14548369432350969777/label/partychat",count:2},{id:"user/14548369432350969777/label/★",count:188},{id:"feed/http://feeds.feedburner.com/pmarca",count:1},{id:"feed/http://instagram-engineering.tumblr.com/rss",count:1},{id:"feed/http://chrome.blogspot.com/feeds/posts/default",count:1},{id:"feed/http://furbo.org/feed/",count:1},{id:"feed/http://developer.apple.com/rss/iphonedevnews.rss",count:3},{id:"feed/http://robert.ocallahan.org/feeds/posts/default",
