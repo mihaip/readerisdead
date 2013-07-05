@@ -104,3 +104,16 @@ class StreamPreferenceList(ApiHandler):
         ] for stream_id, prefs in stream_preferences_json.iteritems()
       }
     })
+
+
+class UnreadCount(ApiHandler):
+  def GET(self):
+    return json.dumps({
+      'max': 1000000,
+      'unreadcounts': [
+        {
+          'id': stream_id,
+          'count': len(stream.item_refs),
+        } for stream_id, stream in web.config.streams_by_stream_id.iteritems()
+      ]
+    })
