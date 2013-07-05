@@ -333,6 +333,10 @@ class Subscription(collections.namedtuple(
   def to_json(self):
     return self._asdict()
 
+  @staticmethod
+  def from_json(comment_json):
+    return Subscription(**comment_json)
+
 class Friend(collections.namedtuple(
     'Friend',
     [
