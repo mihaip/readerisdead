@@ -1,0 +1,58 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"><html><head><title>Google Reader</title>
+<style type="text/css">
+    html, body {
+      margin: 0;
+      font-size: 90%;     
+      background: #fff;
+      color: #000;
+    }
+    
+    body {
+      padding: 1em;
+    }
+    
+    html, body, input {
+      font-family: arial, sans-serif;
+    }   
+    
+    #input {
+      width: 100%;
+    }
+    
+    #buttons {
+      text-align: right;
+    }
+    
+    #buttons input {
+      width: 7em;
+    }
+  </style>
+<script type="text/javascript">
+    function initPrompt() {
+      var args = window.dialogArguments;
+      
+      var messageNode = document.getElementById("message");
+      messageNode.innerHTML = args._message;
+      
+      var inputNode = document.getElementById("input");
+      inputNode.value = args._initialValue;
+    }
+    
+    function handleCancel() {
+      window.dialogArguments._newValue = null;
+      
+      window.close();
+    }
+    
+    function handleSubmit() {
+      window.dialogArguments._newValue = document.getElementById("input").value;
+      
+      window.close();
+      
+      return false;
+    }
+  </script></head>
+<body onload="initPrompt()"><form onsubmit="return handleSubmit()" action=""><p id="message"></p>
+<p><input type="text" id="input"></p>
+<p id="buttons"><input type="submit" value="OK">
+<input type="button" onclick="handleCancel()" value="Cancel"></p></form></body></html>
