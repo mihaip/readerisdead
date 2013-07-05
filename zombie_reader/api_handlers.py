@@ -73,3 +73,17 @@ class RecommendationList(ApiHandler):
         } for r in recommendations
       ]
     })
+
+
+class PreferenceList(ApiHandler):
+  def GET(self):
+    preferences_json = self._read_json_data_file('preferences.json')
+
+    return json.dumps({
+      'prefs': [
+        {
+          'id': id,
+          'value': value,
+        } for id, value in preferences_json.iteritems()
+      ]
+    })
