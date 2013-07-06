@@ -59,7 +59,13 @@ class TagList(ApiHandler):
 
 class RecommendationList(ApiHandler):
   def GET(self):
-    recommendations_json = self._read_json_data_file('recommendations.json')
+    try:
+      recommendations_json = self._read_json_data_file('recommendations.json')
+    except:
+      logging.warning('Could not load preferences, using empty list',
+          exc_info=True)
+      recommendations_json = []
+
     recommendations = [
         base.api.Recommendation.from_json(r) for r in recommendations_json]
     count = int(web.input(n=4).n)
@@ -80,7 +86,12 @@ class RecommendationList(ApiHandler):
 
 class PreferenceList(ApiHandler):
   def GET(self):
-    preferences_json = self._read_json_data_file('preferences.json')
+    try:
+      preferences_json = self._read_json_data_file('preferences.json')
+    except:
+      logging.warning('Could not load preferences, using defaults',
+          exc_info=True)
+      preferences_json = {}
 
     return json.dumps({
       'prefs': [
@@ -94,8 +105,13 @@ class PreferenceList(ApiHandler):
 
 class StreamPreferenceList(ApiHandler):
   def GET(self):
-    stream_preferences_json = self._read_json_data_file(
-        'stream-preferences.json')
+    try:
+      stream_preferences_json = self._read_json_data_file(
+          'stream-preferences.json')
+    except:
+      logging.warning('Could not load stream preferences, using defaults',
+          exc_info=True)
+      stream_preferences_json = {}
 
     return json.dumps({
       'streamprefs': {

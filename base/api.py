@@ -379,6 +379,11 @@ class Friend(collections.namedtuple(
     result['websites'] = [w.to_json() for w in self.websites]
     return result
 
+  @staticmethod
+  def from_json(friend_json):
+    return Friend(**friend_json)
+
+
 class Website(collections.namedtuple('Website', ['title', 'url'])):
   def to_json(self):
     return self._asdict()

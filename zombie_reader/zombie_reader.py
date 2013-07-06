@@ -100,8 +100,8 @@ def main():
   _run_app(app, args.port)
 
 def _load_archive_data(archive_directory):
-  _load_streams(archive_directory)
   _load_user_info(archive_directory)
+  _load_streams(archive_directory)
 
 def _load_streams(archive_directory):
   streams_by_stream_id = {}
@@ -119,11 +119,57 @@ def _load_streams(archive_directory):
   logging.info('Loaded item refs from %d streams', len(streams_by_stream_id))
 
 def _load_user_info(archive_directory):
-  user_info_path = os.path.join(archive_directory, 'data', 'user-info.json')
-  with open(user_info_path) as user_info_file:
-    user_info_json = json.load(user_info_file)
-    user_info = base.api.UserInfo.from_json(user_info_json)
-    web.config.reader_user_info = user_info
+  def _data_json(file_name):
+    file_path = os.path.join(archive_directory, 'data', file_name)
+    with open(file_path) as data_file:
+      return json.load(data_file)
+
+  try:
+      web.config.reader_user_info = \
+          base.api.UserInfo.from_json(_data_json('user-info.json'))
+      return
+  except:
+    pass
+
+  # Synthesize a UserInfo object for the archives created before
+  # b7993c5f91c1856d98d4dd702d09424e099b47a7.
+  user_id = None
+  email = None
+  profile_id = None
+  user_name = None
+  public_user_name = None
+  is_blogger_user = False
+  signup_time_sec = 0
+  is_multi_login_enabled = False
+
+  tags = [base.api.Tag.from_json(t) for t in _data_json('tags.json')]
+  for tag in tags:
+    stream_id = tag.stream_id
+    stream_id_pieces = tag.stream_id.split('/', 2)
+    if len(stream_id_pieces) == 3 and \
+        stream_id_pieces[0] == 'user' and \
+        stream_id_pieces[2] == 'state/com.google/reading-list':
+      user_id = stream_id_pieces[1]
+
+  friends = [base.api.Friend.from_json(t) for t in _data_json('friends.json')]
+  for friend in friends:
+    if friend.is_current_user:
+      if friend.email_addresses:
+        email = friend.email_addresses[0]
+      for i, friend_user_id in enumerate(friend.user_ids):
+        if friend_user_id == user_id:
+          profile_id = friend.profile_ids[i]
+          break
+      user_name = friend.given_name
+      break
+
+  web.config.reader_user_info = base.api.UserInfo(
+      user_id=user_id, email=email, profile_id=profile_id, user_name=user_name,
+      public_user_name=public_user_name, is_blogger_user=is_blogger_user,
+      signup_time_sec=signup_time_sec,
+      is_multi_login_enabled=is_multi_login_enabled)
+  logging.info(web.config.reader_user_info.to_json())
+
 
 def _run_app(app, port):
     func = app.wsgifunc()
