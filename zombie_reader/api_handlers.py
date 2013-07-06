@@ -128,10 +128,14 @@ class StreamContents(ApiHandler):
     stream = web.config.streams_by_stream_id.get(stream_id)
     if not stream:
       return web.notfound('Stream ID %s was not archived' % stream_id)
-    input = web.input(n=20, c=0)
+    input = web.input(n=20, c=0, r='d')
     count = int(input.n)
     continuation = int(input.c)
-    item_refs = stream.item_refs[continuation:continuation + count]
+    ranking = input.r
+    item_refs = stream.item_refs
+    if ranking == 'o':
+        item_refs = list(reversed(item_refs))
+    item_refs = item_refs[continuation:continuation + count]
     item_refs_by_item_id = {i.item_id: i for i in item_refs}
 
     item_entries = []
