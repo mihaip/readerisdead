@@ -142,13 +142,21 @@ class UnreadCount(ApiHandler):
 class StreamContents(ApiHandler):
   def GET(self, stream_id):
     stream_id = urllib.unquote_plus(stream_id)
-    stream = web.config.reader_streams_by_stream_id.get(stream_id)
-    if not stream:
-      return web.notfound('Stream ID %s was not archived' % stream_id)
     input = web.input(n=20, c=0, r='d')
     count = int(input.n)
     continuation = int(input.c)
     ranking = input.r
+
+    # The read items stream doesn't display a sorting UI, so it'll always be
+    # request in the newest-first order. We instead support generating a URL
+    # that will include the desired sorting in the stream ID
+    if stream_id.endswith('state/com.google/read-oldest-first'):
+      stream_id = stream_id[:-13]
+      ranking = 'o'
+
+    stream = web.config.reader_streams_by_stream_id.get(stream_id)
+    if not stream:
+      return web.notfound('Stream ID %s was not archived' % stream_id)
     item_refs = stream.item_refs
     if ranking == 'o':
         item_refs = list(reversed(item_refs))
