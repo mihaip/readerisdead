@@ -450,8 +450,8 @@ class UserInfo(collections.namedtuple(
     return self._asdict()
 
   @staticmethod
-  def from_json(comment_json):
-    return UserInfo(**comment_json)
+  def from_json(user_info_json):
+    return UserInfo(**user_info_json)
 
 class ItemRef(collections.namedtuple('ItemRef', ['item_id', 'timestamp_usec'])):
   def to_json(self):

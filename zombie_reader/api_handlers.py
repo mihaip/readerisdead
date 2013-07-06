@@ -117,7 +117,8 @@ class UnreadCount(ApiHandler):
         {
           'id': stream_id,
           'count': len(stream.item_refs),
-        } for stream_id, stream in web.config.streams_by_stream_id.iteritems()
+        } for stream_id, stream in
+            web.config.reader_streams_by_stream_id.iteritems()
       ]
     })
 
@@ -125,7 +126,7 @@ class UnreadCount(ApiHandler):
 class StreamContents(ApiHandler):
   def GET(self, stream_id):
     stream_id = urllib.unquote_plus(stream_id)
-    stream = web.config.streams_by_stream_id.get(stream_id)
+    stream = web.config.reader_streams_by_stream_id.get(stream_id)
     if not stream:
       return web.notfound('Stream ID %s was not archived' % stream_id)
     input = web.input(n=20, c=0, r='d')

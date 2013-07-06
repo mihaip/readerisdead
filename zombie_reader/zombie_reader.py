@@ -39,7 +39,11 @@ urls = (
     '/reader/logging', 'StubbedOut',
     '/reader/js-load-error', 'StubbedOut',
 )
-render = web.template.render('zombie_reader/templates/')
+render = web.template.render(
+    'zombie_reader/templates/',
+    globals={
+      'js_escape': json.dumps,
+    })
 
 class RedirectToMain:
   def GET(self):
@@ -47,7 +51,7 @@ class RedirectToMain:
 
 class Main:
   def GET(self):
-    return render.main()
+    return render.main(user_info=web.config.reader_user_info)
 
 class Overview:
   def GET(self):
@@ -84,6 +88,22 @@ def main():
     syst.exit(1)
   web.config.reader_archive_directory = archive_directory
 
+  _load_archive_data(archive_directory)
+
+  app = web.application(urls, globals())
+
+  homepage_url = 'http://%s:%d/reader/view/' % (socket.gethostname(), args.port)
+  logging.info('Serving at %s', homepage_url)
+  if not args.disable_launch_in_browser:
+    webbrowser.open_new_tab(homepage_url)
+
+  _run_app(app, args.port)
+
+def _load_archive_data(archive_directory):
+  _load_streams(archive_directory)
+  _load_user_info(archive_directory)
+
+def _load_streams(archive_directory):
   streams_by_stream_id = {}
   streams_directory = os.path.join(archive_directory, 'streams')
   stream_file_names = os.listdir(streams_directory)
@@ -95,17 +115,15 @@ def main():
       streams_by_stream_id[stream.stream_id] = stream
       if i % 25 == 1:
         logging.info('  %d/%d streams loaded', i, len(stream_file_names))
-  web.config.streams_by_stream_id = streams_by_stream_id
+  web.config.reader_streams_by_stream_id = streams_by_stream_id
   logging.info('Loaded item refs from %d streams', len(streams_by_stream_id))
 
-  app = web.application(urls, globals())
-
-  homepage_url = 'http://%s:%d/reader/view/' % (socket.gethostname(), args.port)
-  logging.info('Serving at %s', homepage_url)
-  if not args.disable_launch_in_browser:
-    webbrowser.open_new_tab(homepage_url)
-
-  _run_app(app, args.port)
+def _load_user_info(archive_directory):
+  user_info_path = os.path.join(archive_directory, 'data', 'user-info.json')
+  with open(user_info_path) as user_info_file:
+    user_info_json = json.load(user_info_file)
+    user_info = base.api.UserInfo.from_json(user_info_json)
+    web.config.reader_user_info = user_info
 
 def _run_app(app, port):
     func = app.wsgifunc()
@@ -120,6 +138,7 @@ def _run_app(app, port):
     try:
         web.httpserver.server.start()
     except (KeyboardInterrupt, SystemExit):
+        logging.info('Shutting down the server')
         web.httpserver.server.stop()
         web.httpserver.server = None
 
