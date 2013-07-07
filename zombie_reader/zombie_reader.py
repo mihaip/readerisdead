@@ -101,6 +101,8 @@ def main():
 
 def _load_archive_data(archive_directory):
   _load_user_info(archive_directory)
+  user_info = web.config.reader_user_info
+  logging.info('Loading archive for %s', user_info.email or user_info.user_name)
   _load_streams(archive_directory)
 
 def _load_streams(archive_directory):
@@ -114,7 +116,7 @@ def _load_streams(archive_directory):
       stream = base.api.Stream.from_json(stream_json)
       streams_by_stream_id[stream.stream_id] = stream
       if i % 25 == 1:
-        logging.info('  %d/%d streams loaded', i, len(stream_file_names))
+        logging.debug('  %d/%d streams loaded', i, len(stream_file_names))
   web.config.reader_streams_by_stream_id = streams_by_stream_id
   logging.info('Loaded item refs from %d streams', len(streams_by_stream_id))
 
