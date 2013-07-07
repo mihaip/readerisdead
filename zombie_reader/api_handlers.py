@@ -2,6 +2,7 @@ import json
 import logging
 import os.path
 import urllib
+import xml.etree.cElementTree as ET
 
 import third_party.web as web
 
@@ -209,8 +210,13 @@ class StreamContents(ApiHandler):
           os.path.join(web.config.reader_archive_directory, 'items'), item_id)
       if os.path.exists(item_body_path):
         with open(item_body_path) as item_body_file:
-          feed = base.atom.parse(item_body_file)
           found_entry = False
+          try:
+            feed = base.atom.parse(item_body_file)
+          except ET.ParseError as e:
+            logging.warning('Could not parse file %s to load item entry %s',
+                item_body_path, item_id)
+            continue
           for entry in feed.entries:
             if entry.item_id == item_id:
               if timestamp_usec == 0 and stream_id.startswith('feed/'):
