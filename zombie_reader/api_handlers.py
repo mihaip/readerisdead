@@ -114,6 +114,14 @@ class PreferenceList(ApiHandler):
     preferences_json['show-search-clarification'] = 'false'
     preferences_json['show-blogger-following-intro'] = 'false'
 
+    if 'lhn-prefs' in preferences_json:
+      # Make sure that we show all unread counts for the LHN sections, since
+      # they're not really unread counts anymore.
+      lhn_prefs = json.loads(preferences_json['lhn-prefs'])
+      for section_json in lhn_prefs.values():
+        section_json['suc'] = 'true'
+      preferences_json['lhn-prefs'] = json.dumps(lhn_prefs)
+
     return json.dumps({
       'prefs': [
         {
