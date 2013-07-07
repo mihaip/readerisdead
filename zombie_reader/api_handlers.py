@@ -163,6 +163,9 @@ class StreamContents(ApiHandler):
       stream_id = stream_id[:-13]
       ranking = 'o'
 
+    if stream_id.startswith('user/-/'):
+      stream_id = 'user/' + web.config.reader_user_info.user_id + stream_id[6:]
+
     stream = web.config.reader_streams_by_stream_id.get(stream_id)
     if not stream:
       return web.notfound('Stream ID %s was not archived' % stream_id)
