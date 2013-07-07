@@ -240,8 +240,13 @@ class StreamContents(ApiHandler):
             'profileId': a.author_profile_id,
           } for a in e.annotations
         ],
+        # We have comment data, but the Reader JS can't show it, so there's no
+        # point in outputting it.
         'comments': [],
+        # Ditto for likers
         'likingUsers': [],
+        # Prevents the keep unread item action from showing up.
+        'isReadStateLocked': True,
       }
 
       for link in e.links:
