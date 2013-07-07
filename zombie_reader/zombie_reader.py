@@ -127,7 +127,11 @@ def _load_streams(archive_directory):
       ]
       stream_items = sorted(stream_items, key=lambda i: i[0], reverse=True)
       stream_items_by_stream_id[stream_id] = stream_items
-      if stream_id.startswith('user/'):
+      # Don't care about non-user streams (for labelling as categories), or
+      # about the reading-list stream (applied to most items, not used by the
+      # UI).
+      if stream_id.startswith('user/') and \
+          not stream_id.endswith('/reading-list'):
         for timestamp_usec, item_id_int_form in stream_items:
           stream_ids_by_item_id.setdefault(
               item_id_int_form, []).append(stream_id)
