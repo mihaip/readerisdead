@@ -193,14 +193,21 @@ class StreamContents(ApiHandler):
     stream_items = web.config.reader_stream_items_by_stream_id.get(stream_id)
     if not stream_items:
       return web.notfound('Stream ID %s was not archived' % stream_id)
-    if ranking == 'o':
-        stream_items = list(reversed(stream_items))
 
     item_refs = []
     item_entries = []
-    chunk_stream_item_ids = stream_items[0][continuation:continuation + count]
-    chunk_stream_item_timestamps = \
-        stream_items[1][continuation:continuation + count]
+    if ranking != 'o':
+      start_index = continuation
+      end_index = continuation + count
+    else:
+      start_index = -continuation - count
+      end_index = -continuation if continuation else None
+    chunk_stream_item_ids = stream_items[0][start_index:end_index]
+    chunk_stream_item_timestamps = stream_items[1][start_index:end_index]
+    if ranking == 'o':
+      chunk_stream_item_ids = tuple(reversed(chunk_stream_item_ids))
+      chunk_stream_item_timestamps = tuple(reversed(chunk_stream_item_timestamps))
+
     for item_id_int_form, timestamp_usec in itertools.izip(
         chunk_stream_item_ids, chunk_stream_item_timestamps):
       item_id = base.api.ItemId(int_form=item_id_int_form)
