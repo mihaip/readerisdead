@@ -47,7 +47,8 @@ def parse(xml_text_or_file):
 
     author_name = None
     author_element = entry_element.find('{%s}author' % ATOM_NS)
-    if author_element is not None:
+    if author_element is not None and \
+        '{%s}unknown-author' % READER_NS not in author_element.attrib:
       author_name_element = author_element.find('{%s}name' % ATOM_NS)
       if author_name_element is not None:
         author_name = author_name_element.text
