@@ -111,6 +111,10 @@ class PreferenceList(ApiHandler):
     # We want to show all archived items by default.
     preferences_json['read-items-visible'] = 'true'
 
+    # Always start with the overview page, since that shows some explanatory
+    # text.
+    preferences_json['start-page'] = 'home'
+
     # Turn off more "helpful" interruptions.
     preferences_json['show-scroll-help'] = 'false'
     preferences_json['show-search-clarification'] = 'false'
