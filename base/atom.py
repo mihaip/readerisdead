@@ -69,6 +69,20 @@ def parse(xml_text_or_file):
     updated_sec = parse_iso_8601(updated_element.text) \
         if updated_element is not None else crawl_time_msec/1000
 
+    annotations = []
+    annotation_elements = entry_element.findall('{%s}annotation' % READER_NS)
+    for annotation_element in annotation_elements:
+      content_element = annotation_element.find('{%s}content' % ATOM_NS)
+      author_element = annotation_element.find('{%s}author' % ATOM_NS)
+      author_name_element = author_element.find('{%s}name' % ATOM_NS)
+      author_attrib = author_element.attrib
+      annotations.append(Annotation(
+        content=content_element.text,
+        author_name=author_name_element.text,
+        author_user_id=author_attrib['{%s}user-id' % READER_NS],
+        author_profile_id=author_attrib['{%s}profile-id' % READER_NS],
+      ))
+
     entries.append(Entry(
       item_id=item_id,
       title=title,
@@ -78,6 +92,7 @@ def parse(xml_text_or_file):
       links=links,
       published_sec=published_sec,
       updated_sec=updated_sec,
+      annotations=annotations,
     ))
   return Feed(entries=entries)
 
@@ -92,11 +107,15 @@ Entry = collections.namedtuple('Entry', [
     'links',
     'published_sec',
     'updated_sec',
+    'annotations',
 
     # ElementTree element
     'element'])
 
 Origin = collections.namedtuple('Origin', ['stream_id', 'title', 'html_url'])
 
-Link = collections.namedtuple(
-    'Link', ['relation', 'href', 'type', 'title', 'length'])
+Link = collections.namedtuple('Link',
+    ['relation', 'href', 'type', 'title', 'length'])
+
+Annotation = collections.namedtuple('Annotation',
+    ['content', 'author_name', 'author_user_id', 'author_profile_id'])

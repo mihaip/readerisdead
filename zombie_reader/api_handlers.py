@@ -220,7 +220,14 @@ class StreamContents(ApiHandler):
           'title': e.origin.title,
           'htmlUrl': e.origin.html_url,
         },
-        'annotations': [], # TODO
+        'annotations': [
+          {
+            'content': a.content,
+            'author': a.author_name,
+            'userId': a.author_user_id,
+            'profileId': a.author_profile_id,
+          } for a in e.annotations
+        ],
         'comments': [],
         'likingUsers': [],
       }
