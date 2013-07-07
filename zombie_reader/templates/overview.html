@@ -1,3 +1,22 @@
+$def with (user_id, recent_read_items, recent_kept_unread_items, recent_starred_items, recent_broadcast_items)
+
+$def recent_item_group(state_tag_name, state_tag_title, entries):
+    <div id="recent-activity-$state_tag_name" class="recent">
+      <div class="overview-stream" id="user/$user_id/state/com.google/$state_tag_name">
+        <h4><a href="#stream/user/$user_id/state/com.google/$state_tag_name">$state_tag_title</a></h4>
+        $for entry in entries:
+          <div class="recent-item">
+            <span class="link overview-item-link" id="$entry.item_id.atom_form">
+              $:entry.title
+            </span>
+            from
+            <span class="recent-stream-title overview-item-link" id="$entry.item_id.atom_form">
+              $:entry.origin.title
+            </span>
+          </div>
+      </div>
+    </div>
+
 <!DOCTYPE html>
 <html>
 	<head>
@@ -21,81 +40,17 @@
 					<div id="right-section">
 						<div class="overview-section">
 							<div class="section" id="recent-activity">
-								<div id="recent-activity-star" class="recent">
-									<div class="overview-stream" id="user/14548369432350969777/state/com.google/starred">
-										<h4>
-										<a>Recently starred</a>
-									</h4>
-									<div class="recent-item">
-										<span class="link overview-item-link" id="tag:google.com,2005:reader/item/6768e481b3b0ee42">
-											jenna: To those trying to replace @googlereader - it's not just about saving the feeds I read, it's about items I've read, starred, shared, tagged.
-										</span>
-										from
-										<span class="recent-stream-title overview-item-link" id="tag:google.com,2005:reader/item/6768e481b3b0ee42">
-											@mihai Twitter Timeline
-										</span>
-									</div>
-									<div class="recent-item">
-										<span class="link overview-item-link" id="tag:google.com,2005:reader/item/3f16d50a5d045e5e">
-											Use forensics and detective work to solve JavaScript performance mysteries
-										</span>
-										from
-										<span class="recent-stream-title overview-item-link" id="tag:google.com,2005:reader/item/3f16d50a5d045e5e">
-											HTML5Rocks
-										</span>
-									</div>
-								</div>
-							</div>
-							<div id="recent-activity-kept-unread" class="recent">
-								<div class="overview-stream" id="user/14548369432350969777/state/com.google/kept-unread">
-									<h4>
-									<a>Recently kept unread</a>
-								</h4>
-								<div class="recent-item">
-									<span class="link overview-item-link" id="tag:google.com,2005:reader/item/3a20b441f25205d6">
-										Optimizing your JavaScript game for Firefox OS
-									</span>
-									from
-									<span class="recent-stream-title overview-item-link" id="tag:google.com,2005:reader/item/3a20b441f25205d6">
-										Mozilla Hacks - the Web developer blog
-									</span>
-								</div>
-								<div class="recent-item">
-									<span class="link overview-item-link" id="tag:google.com,2005:reader/item/993f1ac491f9b32b">
-										All Or Nothing
-									</span>
-									from
-									<span class="recent-stream-title overview-item-link" id="tag:google.com,2005:reader/item/993f1ac491f9b32b">
-										Marco.org
-									</span>
-								</div>
-							</div>
-						</div>
-						<div id="recent-activity-read" class="recent">
-							<div class="overview-stream" id="user/14548369432350969777/state/com.google/read">
-								<h4>
-								<a>Recently read</a>
-							</h4>
-							<div class="recent-item">
-								<span class="link overview-item-link" id="tag:google.com,2005:reader/item/3645dab9cfe36e4c">
-									Case: RT @al3x: This one’s for the kids. Last post on business for a while. A letter to a young programmer considering a startup: http://t.co/wcC…
-								</span>
-								from
-								<span class="recent-stream-title overview-item-link" id="tag:google.com,2005:reader/item/3645dab9cfe36e4c">
-									@mihai Twitter Timeline
-								</span>
-							</div>
-							<div class="recent-item">
-								<span class="link overview-item-link" id="tag:google.com,2005:reader/item/6175d275d4d29349">
-									jehiah: RT @avibryant: It's amazing how many times you can say "wait, what?" in a row while trying to understand this line of code: https://t.co/5R…
-								</span>
-								from
-								<span class="recent-stream-title overview-item-link" id="tag:google.com,2005:reader/item/6175d275d4d29349">
-									@mihai Twitter Timeline
-								</span>
-							</div>
-						</div>
-					</div>
+                $if recent_starred_items:
+                  $:recent_item_group('starred', 'Last starred', recent_starred_items)
+
+                $if recent_kept_unread_items:
+                  $:recent_item_group('kept-unread', 'Last kept unread', recent_kept_unread_items)
+
+                $if recent_read_items:
+                  $:recent_item_group('read', 'Last read', recent_read_items)
+
+                $if recent_broadcast_items:
+                  $:recent_item_group('broadcast', 'Last shared (before the sharepocalypse)', recent_broadcast_items)
 				</div>
 				<div id="tips">
 					<div class="section-header">

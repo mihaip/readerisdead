@@ -215,26 +215,10 @@ class StreamContents(ApiHandler):
     for item_id_int_form, timestamp_usec in itertools.izip(
         chunk_stream_item_ids, chunk_stream_item_timestamps):
       item_id = base.api.ItemId(int_form=item_id_int_form)
-      item_body_path = base.paths.item_id_to_file_path(
-          os.path.join(web.config.reader_archive_directory, 'items'), item_id)
-      if os.path.exists(item_body_path):
-        with open(item_body_path) as item_body_file:
-          found_entry = False
-          try:
-            feed = base.atom.parse(item_body_file)
-          except ET.ParseError as e:
-            logging.warning('Could not parse file %s to load item entry %s',
-                item_body_path, item_id)
-            continue
-          for entry in feed.entries:
-            if entry.item_id == item_id:
-              item_entries.append(entry)
-              found_entry = True
-              break
-          if not found_entry:
-            logging.warning('Did not find item entry for %s', item_id)
-      else:
-        logging.warning('No item body file entry for %s', item_id)
+      item_entry = base.atom.load_item_entry(
+          web.config.reader_archive_directory, item_id)
+      if item_entry:
+        item_entries.append(item_entry)
       item_refs.append(
           base.api.ItemRef(item_id=item_id, timestamp_usec=timestamp_usec))
 

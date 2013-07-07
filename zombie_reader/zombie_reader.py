@@ -15,6 +15,7 @@ import base.api
 import base.log
 import base.middleware
 import base.paths
+import base.tag_helper
 
 _READER_STATIC_PATH_PREFIX = '/reader/ui/'
 _STATIC_DIRECTORY = os.path.abspath(os.path.join(
@@ -63,7 +64,35 @@ class Main:
 
 class Overview:
   def GET(self):
-    return render.overview()
+    user_id = web.config.reader_user_info.user_id
+    stream_items_by_stream_id = web.config.reader_stream_items_by_stream_id
+
+    def load_recent_item_entries(state_tag_name):
+      stream_id = base.tag_helper.TagHelper(
+          user_id).state_tag(state_tag_name).stream_id
+      if not stream_id in stream_items_by_stream_id:
+        logging.info('%s %s had no entries', state_tag_name, stream_id)
+        return []
+
+      item_ids = [
+          base.api.ItemId(int_form=i)
+          for i in stream_items_by_stream_id[stream_id][0][0:2]
+      ]
+      item_entries = []
+      for item_id in item_ids:
+        item_entry = base.atom.load_item_entry(
+            web.config.reader_archive_directory, item_id)
+        if item_entry:
+          item_entries.append(item_entry)
+      logging.info('%s %s', state_tag_name, item_entries)
+      return item_entries
+
+    return render.overview(
+      user_id=user_id,
+      recent_read_items=load_recent_item_entries('read'),
+      recent_kept_unread_items=load_recent_item_entries('kept-unread'),
+      recent_starred_items=load_recent_item_entries('starred'),
+      recent_broadcast_items=load_recent_item_entries('broadcast'))
 
 class EmbedIframe:
   def GET(self):

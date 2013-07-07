@@ -1,6 +1,7 @@
 import calendar
 import collections
 import logging
+import os.path
 import time
 import xml.etree.cElementTree as ET
 
@@ -108,6 +109,26 @@ def parse(xml_text_or_file):
       author_name=author_name,
     ))
   return Feed(entries=entries)
+
+def load_item_entry(archive_directory, item_id):
+  item_body_path = base.paths.item_id_to_file_path(
+      os.path.join(archive_directory, 'items'), item_id)
+  if os.path.exists(item_body_path):
+    with open(item_body_path) as item_body_file:
+      try:
+        feed = base.atom.parse(item_body_file)
+      except ET.ParseError as e:
+        logging.warning('Could not parse file %s to load item entry %s',
+            item_body_path, item_id)
+        return None
+      for entry in feed.entries:
+        if entry.item_id == item_id:
+          return entry
+    logging.warning('Did not find item entry for %s', item_id)
+  else:
+    logging.warning('No item body file entry for %s', item_id)
+
+  return None
 
 Feed = collections.namedtuple('Feed', ['entries'])
 

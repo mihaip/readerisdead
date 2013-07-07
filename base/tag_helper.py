@@ -7,36 +7,36 @@ class TagHelper(object):
   def system_tags(self):
     return [
       # Item state tags
-      self._state_tag('broadcast'),
-      self._state_tag('starred'),
-      self._state_tag('like'),
-      self._state_tag('dislike'),
-      self._state_tag('read'),
-      self._state_tag('kept-unread'),
-      self._state_tag('muted'),
-      self._state_tag('skimmed'),
-      self._state_tag('itemrecs/en'),
-      self._state_tag('tracking-body-link-used'),
-      self._state_tag('tracking-emailed'),
-      self._state_tag('tracking-item-link-used'),
-      self._state_tag('tracking-kept-unread'),
-      self._state_tag('tracking-custom-item-link'),
-      self._state_tag('tracking-mobile-read'),
-      self._state_tag('tracking-explore-read'),
-      self._state_tag('tracking-igoogle-module-read'),
+      self.state_tag('broadcast'),
+      self.state_tag('starred'),
+      self.state_tag('like'),
+      self.state_tag('dislike'),
+      self.state_tag('read'),
+      self.state_tag('kept-unread'),
+      self.state_tag('muted'),
+      self.state_tag('skimmed'),
+      self.state_tag('itemrecs/en'),
+      self.state_tag('tracking-body-link-used'),
+      self.state_tag('tracking-emailed'),
+      self.state_tag('tracking-item-link-used'),
+      self.state_tag('tracking-kept-unread'),
+      self.state_tag('tracking-custom-item-link'),
+      self.state_tag('tracking-mobile-read'),
+      self.state_tag('tracking-explore-read'),
+      self.state_tag('tracking-igoogle-module-read'),
 
       # Note-in-Reader
       self._source_tag('post'),
       self._source_tag('link'),
-      self._state_tag('created'),
+      self.state_tag('created'),
 
       # Subscription level tags
-      self._state_tag('reading-list'),
-      self._state_tag('broadcast-friends'),
+      self.state_tag('reading-list'),
+      self.state_tag('broadcast-friends'),
       self._user_tag('state', 'com.blogger', 'blogger-following'),
     ]
 
-  def _state_tag(self, state):
+  def state_tag(self, state):
     return self._internal_tag('state', state)
 
   def _source_tag(self, source):
