@@ -45,6 +45,13 @@ def parse(xml_text_or_file):
       html_url=origin_html_url,
     )
 
+    author_name = None
+    author_element = entry_element.find('{%s}author' % ATOM_NS)
+    if author_element is not None:
+      author_name_element = author_element.find('{%s}name' % ATOM_NS)
+      if author_name_element is not None:
+        author_name = author_name_element.text
+
     links = []
     link_elements = entry_element.findall('{%s}link' % ATOM_NS)
     for link_element in link_elements:
@@ -93,6 +100,7 @@ def parse(xml_text_or_file):
       published_sec=published_sec,
       updated_sec=updated_sec,
       annotations=annotations,
+      author_name=author_name,
     ))
   return Feed(entries=entries)
 
@@ -108,6 +116,7 @@ Entry = collections.namedtuple('Entry', [
     'published_sec',
     'updated_sec',
     'annotations',
+    'author_name',
 
     # ElementTree element
     'element'])

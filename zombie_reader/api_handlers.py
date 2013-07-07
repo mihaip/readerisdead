@@ -247,6 +247,9 @@ class StreamContents(ApiHandler):
         if link_json:
           item_json.setdefault(link.relation, []).append(link_json)
 
+      if e.author_name:
+        item_json['author'] = e.author_name
+
       items_json.append(item_json)
 
     response_json = {
