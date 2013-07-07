@@ -102,6 +102,18 @@ class PreferenceList(ApiHandler):
       'tags-action': True
     })
 
+    # Oldest first is no longer limited to the last 30 days, don't show the
+    # interruption that warns about that.
+    preferences_json['show-oldest-interrupt'] = 'false'
+
+    # We want to show all archived items by default.
+    preferences_json['read-items-visible'] = 'true'
+
+    # Turn off more "helpful" interruptions.
+    preferences_json['show-scroll-help'] = 'false'
+    preferences_json['show-search-clarification'] = 'false'
+    preferences_json['show-blogger-following-intro'] = 'false'
+
     return json.dumps({
       'prefs': [
         {
