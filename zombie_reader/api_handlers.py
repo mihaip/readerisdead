@@ -1,3 +1,4 @@
+import itertools
 import json
 import logging
 import os.path
@@ -162,7 +163,7 @@ class UnreadCount(ApiHandler):
       'unreadcounts': [
         {
           'id': stream_id,
-          'count': len(stream_items),
+          'count': len(stream_items[0]),
         } for stream_id, stream_items in
             web.config.reader_stream_items_by_stream_id.iteritems()
       ]
@@ -197,14 +198,11 @@ class StreamContents(ApiHandler):
 
     item_refs = []
     item_entries = []
-    for stream_item in stream_items[continuation:continuation + count]:
-      timestamp_usec = 0
-      if isinstance(stream_item, tuple):
-        timestamp_usec, item_id_int_form = stream_item
-      else:
-        # For feed streams we don't store the timestamp, since we can read it
-        # from the item body.
-        item_id_int_form = stream_item
+    chunk_stream_item_ids = stream_items[0][continuation:continuation + count]
+    chunk_stream_item_timestamps = \
+        stream_items[1][continuation:continuation + count]
+    for item_id_int_form, timestamp_usec in itertools.izip(
+        chunk_stream_item_ids, chunk_stream_item_timestamps):
       item_id = base.api.ItemId(int_form=item_id_int_form)
       item_body_path = base.paths.item_id_to_file_path(
           os.path.join(web.config.reader_archive_directory, 'items'), item_id)
@@ -219,8 +217,6 @@ class StreamContents(ApiHandler):
             continue
           for entry in feed.entries:
             if entry.item_id == item_id:
-              if timestamp_usec == 0 and stream_id.startswith('feed/'):
-                timestamp_usec = entry.crawl_time_msec * 1000
               item_entries.append(entry)
               found_entry = True
               break
@@ -300,7 +296,7 @@ class StreamContents(ApiHandler):
       'items': items_json,
     }
 
-    if continuation + count < len(stream_items):
+    if continuation + count < len(stream_items[0]):
       response_json['continuation'] = continuation + count
 
     return json.dumps(response_json)

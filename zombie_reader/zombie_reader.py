@@ -123,24 +123,26 @@ def _load_streams(archive_directory):
     with open(os.path.join(streams_directory, stream_file_name)) as stream_file:
       stream_json = json.load(stream_file)
       stream_id = stream_json['stream_id']
-      stream_items = [
+      stream_items = tuple(
           (timestamp_usec, int(item_id_json, 16))
           for item_id_json, timestamp_usec
               in stream_json['item_refs'].iteritems()
-      ]
+      )
       stream_items = sorted(
           stream_items, key=operator.itemgetter(0), reverse=True)
-      if stream_id.startswith('feed/'):
-        # Drop the timestamp for feed streams (saving a long and a tuple) since
-        # we can get it from the item body.
-        stream_items = [si[1] for si in stream_items]
-      stream_items_by_stream_id[stream_id] = stream_items
+
+      # We store the timestamps and item IDs in parallel tuples to reduce the
+      # overhead of having a tuple per item.
+      stream_items_by_stream_id[stream_id] = (
+          tuple(si[1] for si in stream_items),
+          tuple(si[0] for si in stream_items)
+      )
       # Don't care about non-user streams (for labeling as categories), or
       # about the reading-list stream (applied to most items, not used by the
       # UI).
       if stream_id.startswith('user/') and \
           not stream_id.endswith('/reading-list'):
-        for timestamp_usec, item_id_int_form in stream_items:
+        for _, item_id_int_form in stream_items:
           stream_ids_by_item_id.setdefault(
               item_id_int_form, []).append(stream_id)
       if i % 25 == 0:
