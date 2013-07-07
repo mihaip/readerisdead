@@ -166,6 +166,8 @@ class StreamContents(ApiHandler):
     if stream_id.startswith('user/-/'):
       stream_id = 'user/' + web.config.reader_user_info.user_id + stream_id[6:]
 
+    stream_ids_by_item_id = web.config.reader_stream_ids_by_item_id
+
     stream = web.config.reader_streams_by_stream_id.get(stream_id)
     if not stream:
       return web.notfound('Stream ID %s was not archived' % stream_id)
@@ -210,7 +212,9 @@ class StreamContents(ApiHandler):
           'direction': 'ltr',
           'content': e.content,
         },
-        'categories': [], # TODO
+        'categories': [
+            s for s in stream_ids_by_item_id[e.item_id] if s.startswith('user/')
+        ],
         'origin': {
           'streamId': e.origin.stream_id,
           'title': e.origin.title,

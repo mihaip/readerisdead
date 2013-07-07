@@ -107,6 +107,7 @@ def _load_archive_data(archive_directory):
 
 def _load_streams(archive_directory):
   streams_by_stream_id = {}
+  stream_ids_by_item_id = {}
   streams_directory = os.path.join(archive_directory, 'streams')
   stream_file_names = os.listdir(streams_directory)
   logging.info('Loading item refs for %d streams', len(stream_file_names))
@@ -114,10 +115,14 @@ def _load_streams(archive_directory):
     with open(os.path.join(streams_directory, stream_file_name)) as stream_file:
       stream_json = json.load(stream_file)
       stream = base.api.Stream.from_json(stream_json)
-      streams_by_stream_id[stream.stream_id] = stream
-      if i % 25 == 1:
-        logging.debug('  %d/%d streams loaded', i, len(stream_file_names))
+      stream_id = stream.stream_id
+      streams_by_stream_id[stream_id] = stream
+      for item_ref in stream.item_refs:
+        stream_ids_by_item_id.setdefault(item_ref.item_id, []).append(stream_id)
+      if i % 25 == 0:
+        logging.debug('  %d/%d streams loaded', i + 1, len(stream_file_names))
   web.config.reader_streams_by_stream_id = streams_by_stream_id
+  web.config.reader_stream_ids_by_item_id = stream_ids_by_item_id
   logging.info('Loaded item refs from %d streams', len(streams_by_stream_id))
 
 def _load_user_info(archive_directory):
