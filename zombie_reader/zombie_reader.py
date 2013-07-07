@@ -38,6 +38,11 @@ urls = (
     # Stubbed-out handlers
     '/reader/logging', 'StubbedOut',
     '/reader/js-load-error', 'StubbedOut',
+    '/reader/api/0/edit-tag', 'StubbedOut',
+    '/reader/api/0/preference/stream/set', 'StubbedOut',
+    '/reader/api/0/preference/stream/set', 'StubbedOut',
+    '/reader/api/0/preference/set', 'StubbedOut',
+    '/reader/api/0/token', 'StubbedOut',
 )
 render = web.template.render(
     'zombie_reader/templates/',
