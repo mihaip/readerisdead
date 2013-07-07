@@ -67,16 +67,20 @@ class Overview:
     user_id = web.config.reader_user_info.user_id
     stream_items_by_stream_id = web.config.reader_stream_items_by_stream_id
 
-    def load_recent_item_entries(state_tag_name):
-      stream_id = base.tag_helper.TagHelper(
+    def state_stream_id(state_tag_name):
+      return base.tag_helper.TagHelper(
           user_id).state_tag(state_tag_name).stream_id
+
+    def load_item_entries(state_tag_name, start_index, end_index):
+      stream_id = state_stream_id(state_tag_name)
       if not stream_id in stream_items_by_stream_id:
         logging.info('%s %s had no entries', state_tag_name, stream_id)
         return []
 
+      stream_item_ids = stream_items_by_stream_id[stream_id][0]
       item_ids = [
           base.api.ItemId(int_form=i)
-          for i in stream_items_by_stream_id[stream_id][0][0:2]
+          for i in stream_item_ids[start_index:end_index]
       ]
       item_entries = []
       for item_id in item_ids:
@@ -84,15 +88,34 @@ class Overview:
             web.config.reader_archive_directory, item_id)
         if item_entry:
           item_entries.append(item_entry)
-      logging.info('%s %s', state_tag_name, item_entries)
       return item_entries
+
+    def load_recent_item_entries(state_tag_name):
+      return load_item_entries(state_tag_name, 0, 2)
+
+    def load_first_item_entry(state_tag_name):
+      entries = load_item_entries(state_tag_name, -1, None)
+      return entries[0] if entries else None
+
+    def item_count(state_tag_name):
+      stream_id = state_stream_id(state_tag_name)
+      if stream_id in stream_items_by_stream_id:
+        return len(stream_items_by_stream_id[stream_id][0])
+      return 0
 
     return render.overview(
       user_id=user_id,
       recent_read_items=load_recent_item_entries('read'),
       recent_kept_unread_items=load_recent_item_entries('kept-unread'),
       recent_starred_items=load_recent_item_entries('starred'),
-      recent_broadcast_items=load_recent_item_entries('broadcast'))
+      recent_broadcast_items=load_recent_item_entries('broadcast'),
+
+      first_read_item=load_first_item_entry('read'),
+      read_item_count=item_count('read'),
+      first_starred_item=load_first_item_entry('starred'),
+      starred_item_count=item_count('starred'),
+      first_broadcast_item=load_first_item_entry('broadcast'),
+      broadcast_item_count=item_count('broadcast'))
 
 class EmbedIframe:
   def GET(self):

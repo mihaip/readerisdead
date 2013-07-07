@@ -182,10 +182,10 @@ class StreamContents(ApiHandler):
     continuation = int(input.c)
     ranking = input.r
 
-    # The read items stream doesn't display a sorting UI, so it'll always be
-    # request in the newest-first order. We instead support generating a URL
-    # that will include the desired sorting in the stream ID
-    if stream_id.endswith('state/com.google/read-oldest-first'):
+    # The read and starred items stream don't display a sorting UI, so they'll
+    # always be requested in the newest-first order. We instead support
+    # generating a URL that will include the desired sorting in the stream ID
+    if stream_id.endswith('-oldest-first'):
       stream_id = stream_id[:-13]
       ranking = 'o'
 

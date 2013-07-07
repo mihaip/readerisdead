@@ -1,9 +1,9 @@
-$def with (user_id, recent_read_items, recent_kept_unread_items, recent_starred_items, recent_broadcast_items)
+$def with (user_id, recent_read_items, recent_kept_unread_items, recent_starred_items, recent_broadcast_items, first_read_item, read_item_count, first_starred_item, starred_item_count, first_broadcast_item, broadcast_item_count)
 
-$def recent_item_group(state_tag_name, state_tag_title, entries):
+$def recent_item_group(state_tag_name, title, entries):
   <div id="recent-activity-$state_tag_name" class="recent">
     <div class="overview-stream" id="user/$user_id/state/com.google/$state_tag_name">
-      <h4><a href="#stream/user/$user_id/state/com.google/$state_tag_name">$state_tag_title</a></h4>
+      <h4><a href="#stream/user/$user_id/state/com.google/$state_tag_name">$title</a></h4>
       $for entry in entries:
         <div class="recent-item">
           <span class="link overview-item-link" id="$entry.item_id.atom_form">
@@ -16,6 +16,38 @@ $def recent_item_group(state_tag_name, state_tag_title, entries):
         </div>
     </div>
   </div>
+
+$def first_item_group(state_tag_name, title, entry, link_title, item_count):
+  <div class="overview-segment overview-stream" id="user/$user_id/state/com.google/$state_tag_name">
+    <div class="overview-header">
+      <span class="title">
+        <a class="sub-link" href="" id="overview-user/$user_id/state/com.google/$state_tag_name">
+          $title
+        </a>
+      </span>
+    </div>
+    <div class="overview-metadata" dir="ltr">
+      <p class="link item-title overview-item-link" id="$entry.item_id.atom_form">
+        $:entry.title
+      </p>
+      <p class="item-snippet overview-item-link" id="$entry.item_id.atom_form">
+        $:entry.content_snippet
+      </p>
+    </div>
+    <div class="label">
+      <p>
+        See more from
+        <a class="label-link" id="overview-user/$user_id/state/com.google/$state_tag_name" href="">
+          $link_title <span class="unread">($format_number(item_count))</span>
+        </a>
+      </p>
+    </div>
+  </div>
+
+
+$code:
+  def format_number(number):
+    return '{:,}'.format(number)
 
 <!DOCTYPE html>
 <html>
@@ -73,231 +105,39 @@ $def recent_item_group(state_tag_name, state_tag_title, entries):
             <div class="overview-section">
               <div id="overview">
                 <div class="section-header">
-                  New in your subscriptions
+                  Your archived account data
                 </div>
-                <div class="overview-segment overview-stream" id="feed/http://furbo.org/feed/">
-                  <div class="overview-header">
-                    <span class="title">
-                    <a class="sub-link" href="" id="overview-feed/http://furbo.org/feed/">
-                      furbo.org
-                    <span class="unread">
-                      <span class="unread">
-                        (1)
-                      </span>
-                    </span>
-                  </a>
-                </span>
+
+                $if first_read_item:
+                  $:first_item_group('read-oldest-first', 'Your first read item', first_read_item, 'your read items', read_item_count)
+
+                $if first_starred_item:
+                  $:first_item_group('starred-oldest-first', 'Your first starred item', first_starred_item, 'your starred items', starred_item_count)
+
+                $if first_broadcast_item:
+                  $:first_item_group('broadcast-oldest-first', 'Your first shared item', first_broadcast_item, 'your shared items', broadcast_item_count)
               </div>
-              <img src="./overview_files/ollie.png" width="100" height="100" alt="">
-              <div class="overview-metadata" dir="ltr">
-                <p class="link item-title overview-item-link" id="tag:google.com,2005:reader/item/431c053d519409d9">
-                  The Origin of Tweet
-                </p>
-                <p class="item-snippet overview-item-link" id="tag:google.com,2005:reader/item/431c053d519409d9">
-                  Last week, one of my colleagues informed me that the word “tweet” was now included in the Oxford English Dictionary (see “Quiet announcement” at the end of the page.) The noun and verb tweet (in the social-networking sense) has just been added to ...
-                </p>
-              </div>
-              <div class="label">
-                <p>
-                  See more from
-                <a class="label-link" id="overview-user/14548369432350969777/label/mac" href="">
-                  mac
-                <span class="unread">
-                  (180)
-                </span>
-              </a>
-              </p>
             </div>
           </div>
-          <div class="overview-segment overview-stream" id="feed/http://what-if.xkcd.com/feed.atom">
-            <div class="overview-header">
-              <span class="title">
-              <a class="sub-link" href="" id="overview-feed/http://what-if.xkcd.com/feed.atom">
-                What If?
-              <span class="unread">
-                <span class="unread">
-                  (3)
-                </span>
-              </span>
-            </a>
-          </span>
         </div>
-        <div class="overview-metadata" dir="ltr">
-          <p class="link item-title overview-item-link" id="tag:google.com,2005:reader/item/88f012229cbcc2f4">
-            Extreme Boating
-          </p>
-          <p class="item-snippet overview-item-link" id="tag:google.com,2005:reader/item/88f012229cbcc2f4">
-            Extreme Boating What would it be like to navigate a rowboat through a lake of mercury? What about bromine? Liquid gallium? Liquid tungsten? Liquid nitrogen? Liquid helium? -Nicholas Aron Let's take these one at a time. Bromine and mercury are the ...
-          </p>
+        <div id="overview-footer">
+          <div id="footer">
+            <div id="viewer-links"></div>
+            <a target="_blank" href="http://googlereader.blogspot.com/"><b>Google Reader Blog</b></a>
+            -
+            <a href="https://www.google.com/reader/play/?hl=en" target="_new">Reader Play</a>
+            -
+            <a target="_blank" href="http://www.google.com/support/forum/p/reader">Discuss</a>
+            -
+            <a target="_blank" href="http://www.google.com/intl/en/privacy.html">Privacy Policy</a>
+            -
+            <a target="_blank" href="http://www.google.com/support/reader/?hl=en">Help</a>
+            <div class="copyright">
+              ©2013 Google
+            </div>
+          </div>
         </div>
-        <div class="label">
-          <p>
-            See more from
-          <a class="label-link" id="overview-user/14548369432350969777/label/Inbox" href="">
-            Inbox
-          <span class="unread">
-            (1000+)
-          </span>
-        </a>
-        </p>
-      </div>
-      </div>
-      <div class="overview-segment overview-stream" id="feed/http://xkcd.com/rss.xml">
-        <div class="overview-header">
-          <span class="title">
-          <a class="sub-link" href="" id="overview-feed/http://xkcd.com/rss.xml">
-            xkcd.com
-          <span class="unread">
-            <span class="unread">
-              (2)
-            </span>
-          </span>
-        </a>
-      </span>
-      </div>
-      <div class="overview-metadata" dir="ltr">
-        <p class="link item-title overview-item-link" id="tag:google.com,2005:reader/item/db9de74b8df0f655">
-          Habitable Zone
-        </p>
-        <p class="item-snippet overview-item-link" id="tag:google.com,2005:reader/item/db9de74b8df0f655">
-          [image: They have a telescope pointed RIGHT AT US!]
-        </p>
-      </div>
-      <div class="label">
-        <p>
-          See more from
-        <a class="label-link" id="overview-user/14548369432350969777/label/comics" href="">
-          comics
-        <span class="unread">
-          (87)
-        </span>
-      </a>
-      </p>
-      </div>
-      </div>
-      <div class="overview-segment overview-stream" id="feed/http://www.streamspigot.com/bird-feeder/feed/timeline/fYtfSTI5nRCCUnpZWRxxTmA">
-        <div class="overview-header">
-          <span class="title">
-          <a class="sub-link" href="" id="overview-feed/http://www.streamspigot.com/bird-feeder/feed/timeline/fYtfSTI5nRCCUnpZWRxxTmA">
-            @robot_friend Twitter Timeline
-          <span class="unread">
-            <span class="unread">
-              (2)
-            </span>
-          </span>
-        </a>
-      </span>
-      </div>
-      <img src="./overview_files/badge-twitter_normal.png" width="48" height="48" alt="">
-      <div class="overview-metadata" dir="ltr">
-        <p class="link item-title overview-item-link" id="tag:google.com,2005:reader/item/2842fffe0575e32b">
-          mihai: How to get ALL your data out of Reader: http://t.co/cYOvrMf7qO
-        </p>
-        <p class="item-snippet overview-item-link" id="tag:google.com,2005:reader/item/2842fffe0575e32b">
-          mihai How to get ALL your data out of Reader: blog.persistent.info/2013/06/gettin… at 07:10 AM from web
-        </p>
-      </div>
-      <div class="label">
-        <p>
-          See more from
-        <a class="label-link" id="overview-user/14548369432350969777/label/streams" href="">
-          streams
-        <span class="unread">
-          (593)
-        </span>
-      </a>
-      </p>
-      </div>
-      </div>
-      <div class="overview-segment overview-stream" id="feed/http://www.streamspigot.com/bird-feeder/feed/timeline/fUUFzii91TlGzOiDDQMi-bA">
-        <div class="overview-header">
-          <span class="title">
-          <a class="sub-link" href="" id="overview-feed/http://www.streamspigot.com/bird-feeder/feed/timeline/fUUFzii91TlGzOiDDQMi-bA">
-            @streamspigot Twitter Timeline
-          <span class="unread">
-            <span class="unread">
-              (2)
-            </span>
-          </span>
-        </a>
-      </span>
-      </div>
-      <img src="./overview_files/badge-twitter_normal.png" width="48" height="48" alt="">
-      <div class="overview-metadata" dir="ltr">
-        <p class="link item-title overview-item-link" id="tag:google.com,2005:reader/item/6e973499aec508d7">
-          mihai: How to get ALL your data out of Reader: http://t.co/cYOvrMf7qO
-        </p>
-        <p class="item-snippet overview-item-link" id="tag:google.com,2005:reader/item/6e973499aec508d7">
-          mihai How to get ALL your data out of Reader: blog.persistent.info/2013/06/gettin… at 02:10 PM GMT from web
-        </p>
-      </div>
-      <div class="label">
-        <p>
-          See more from
-        <a class="label-link" id="overview-user/14548369432350969777/label/streams" href="">
-          streams
-        <span class="unread">
-          (593)
-        </span>
-      </a>
-      </p>
-      </div>
-      </div>
-      <div class="overview-segment overview-stream" id="feed/http://persistent.info/comments.xml">
-        <div class="overview-header">
-          <span class="title">
-          <a class="sub-link" href="" id="overview-feed/http://persistent.info/comments.xml">
-            persistent.info Comments
-          <span class="unread">
-            <span class="unread">
-              (19)
-            </span>
-          </span>
-        </a>
-      </span>
-      </div>
-      <div class="overview-metadata" dir="ltr">
-        <p class="link item-title overview-item-link" id="tag:google.com,2005:reader/item/b809fd2c510c45c4">
-          Hello! Thanks for building this. Unfortunately, ...
-        </p>
-        <p class="item-snippet overview-item-link" id="tag:google.com,2005:reader/item/b809fd2c510c45c4">
-          Hello! Thanks for building this. Unfortunately, I'm having some trouble -- I think. How can I tell if it's been successful? At the very end I get an I0Error: [Errno 22] invalid mode ('w') or filename which then leads to the place where the mihaip ...
-        </p>
-      </div>
-      <div class="label">
-        <p>
-          See more from
-        <a class="label-link" id="overview-user/14548369432350969777/label/searches-synthetic" href="">
-          searches-synthetic
-        <span class="unread">
-          (33)
-        </span>
-      </a>
-      </p>
-      </div>
       </div>
     </div>
-  </div>
-</div>
-</div>
-<div id="overview-footer">
-  <div id="footer">
-    <div id="viewer-links"></div>
-    <a target="_blank" href="http://googlereader.blogspot.com/"><b>Google Reader Blog</b></a>
-    -
-    <a href="https://www.google.com/reader/play/?hl=en" target="_new">Reader Play</a>
-    -
-    <a target="_blank" href="http://www.google.com/support/forum/p/reader">Discuss</a>
-    -
-    <a target="_blank" href="http://www.google.com/intl/en/privacy.html">Privacy Policy</a>
-    -
-    <a target="_blank" href="http://www.google.com/support/reader/?hl=en">Help</a>
-    <div class="copyright">
-      ©2013 Google
-    </div>
-  </div>
-</div>
-</div>
-</div>
-</body>
+  </body>
 </html>

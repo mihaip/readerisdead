@@ -2,6 +2,7 @@ import calendar
 import collections
 import logging
 import os.path
+import re
 import time
 import xml.etree.cElementTree as ET
 
@@ -9,6 +10,8 @@ import base.api
 
 ATOM_NS = 'http://www.w3.org/2005/Atom'
 READER_NS = 'http://www.google.com/schemas/reader/atom/'
+
+_HTML_TAG_RE = re.compile('<[^<]+?>')
 
 def init():
   ET.register_namespace('gr', READER_NS)
@@ -132,7 +135,7 @@ def load_item_entry(archive_directory, item_id):
 
 Feed = collections.namedtuple('Feed', ['entries'])
 
-Entry = collections.namedtuple('Entry', [
+class Entry(collections.namedtuple('Entry', [
     # Extracted attributes
     'item_id',
     'title',
@@ -146,7 +149,15 @@ Entry = collections.namedtuple('Entry', [
     'author_name',
 
     # ElementTree element
-    'element'])
+    'element'])):
+
+  @property
+  def content_snippet(self):
+    snippet = self.content
+    snippet = _HTML_TAG_RE.sub('', snippet)
+    if len(snippet) > 256:
+      snippet = snippet[:256] + '&hellip;'
+    return snippet
 
 Origin = collections.namedtuple('Origin', ['stream_id', 'title', 'html_url'])
 
