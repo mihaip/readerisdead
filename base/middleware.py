@@ -1,6 +1,7 @@
 import logging
 import os.path
 import posixpath
+import time
 import urllib
 
 import third_party.web as web
@@ -12,20 +13,22 @@ class LogMiddleware:
     self._app = app
 
   def __call__(self, environ, start_response):
+    start_time = time.time()
     def logging_start_response(status, response_headers, *args):
         out = start_response(status, response_headers, *args)
-        self._log(status, environ)
+        server_time = time.time() - start_time
+        self._log(status, server_time, environ)
         return out
 
     return self._app(environ, logging_start_response)
 
-  def _log(self, status, environ):
+  def _log(self, status, server_time, environ):
     req = environ.get('PATH_INFO', '_')
     if environ.get('QUERY_STRING'):
       req += '?%s' % environ['QUERY_STRING']
     method = environ.get('REQUEST_METHOD', '-')
 
-    logging.debug('%s %s - %s', method, req, status)
+    logging.debug('%s %s - %s (%gms)', method, req, status, server_time * 1000)
 
 class StaticMiddleware:
   """WSGI middleware for serving static files. Based on web.httpserver.
