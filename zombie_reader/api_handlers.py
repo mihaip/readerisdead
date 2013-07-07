@@ -161,9 +161,9 @@ class UnreadCount(ApiHandler):
       'unreadcounts': [
         {
           'id': stream_id,
-          'count': len(stream.item_refs),
-        } for stream_id, stream in
-            web.config.reader_streams_by_stream_id.iteritems()
+          'count': len(stream_items),
+        } for stream_id, stream_items in
+            web.config.reader_stream_items_by_stream_id.iteritems()
       ]
     })
 
@@ -188,13 +188,16 @@ class StreamContents(ApiHandler):
 
     stream_ids_by_item_id = web.config.reader_stream_ids_by_item_id
 
-    stream = web.config.reader_streams_by_stream_id.get(stream_id)
-    if not stream:
+    stream_items = web.config.reader_stream_items_by_stream_id.get(stream_id)
+    if not stream_items:
       return web.notfound('Stream ID %s was not archived' % stream_id)
-    item_refs = stream.item_refs
     if ranking == 'o':
-        item_refs = list(reversed(item_refs))
-    item_refs = item_refs[continuation:continuation + count]
+        stream_items = list(reversed(stream_items))
+    item_refs = [base.api.ItemRef(
+          item_id=base.api.ItemId(int_form=item_id_in_form),
+          timestamp_usec=timestamp_usec)
+        for timestamp_usec, item_id_in_form in
+            stream_items[continuation:continuation + count]]
     item_refs_by_item_id = {i.item_id: i for i in item_refs}
 
     item_entries = []
@@ -232,9 +235,8 @@ class StreamContents(ApiHandler):
           'direction': 'ltr',
           'content': e.content,
         },
-        'categories': [
-            s for s in stream_ids_by_item_id[e.item_id] if s.startswith('user/')
-        ],
+        'categories':
+            [s for s in stream_ids_by_item_id.get(e.item_id.int_form, [])],
         'origin': {
           'streamId': e.origin.stream_id,
           'title': e.origin.title,
@@ -284,7 +286,7 @@ class StreamContents(ApiHandler):
       'items': items_json,
     }
 
-    if continuation + count < len(stream.item_refs):
+    if continuation + count < len(stream_items):
       response_json['continuation'] = continuation + count
 
     return json.dumps(response_json)
