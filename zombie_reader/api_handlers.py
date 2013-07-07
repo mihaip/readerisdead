@@ -93,6 +93,15 @@ class PreferenceList(ApiHandler):
           exc_info=True)
       preferences_json = {}
 
+    # Disable G+ share and email actions, since they won't work. Abdulla: your
+    # feature finally gets some use!
+    preferences_json['item-actions'] = json.dumps({
+      'plusone-action': True,
+      'share-action': False,
+      'email-action': False,
+      'tags-action': True
+    })
+
     return json.dumps({
       'prefs': [
         {
