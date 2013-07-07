@@ -43,12 +43,25 @@ def parse(xml_text_or_file):
       html_url=origin_html_url,
     )
 
+    links = []
+    link_elements = entry_element.findall('{%s}link' % ATOM_NS)
+    for link_element in link_elements:
+      a = link_element.attrib
+      links.append(Link(
+         relation=a.get('rel'),
+         href=a.get('href'),
+         type=a.get('type'),
+         title=a.get('title'),
+         length=a.get('length'),
+      ))
+
     entries.append(Entry(
       item_id=item_id,
       title=title,
       content=content,
       element=entry_element,
       origin=origin,
+      links=links,
     ))
   return Feed(entries=entries)
 
@@ -60,8 +73,12 @@ Entry = collections.namedtuple('Entry', [
     'title',
     'content',
     'origin',
+    'links',
 
     # ElementTree element
     'element'])
 
 Origin = collections.namedtuple('Origin', ['stream_id', 'title', 'html_url'])
+
+Link = collections.namedtuple(
+    'Link', ['relation', 'href', 'type', 'title', 'length'])

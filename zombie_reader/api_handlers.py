@@ -182,36 +182,55 @@ class StreamContents(ApiHandler):
       else:
         logging.warning('No item body file entry for %s', item_id)
 
+    items_json = []
+    for e in item_entries:
+      item_json = {
+        'id': e.item_id.atom_form,
+        'crawlTimeMsec': str(int(
+            item_refs_by_item_id[e.item_id].timestamp_usec/1000)),
+        'timestampUsec': str(item_refs_by_item_id[e.item_id].timestamp_usec),
+        'published': 0, # TODO
+        'updated': 0, # TODO
+        'title': e.title,
+        'content': {
+          # Unfortunately Atom output did not appear to contain writing
+          # direction.
+          'direction': 'ltr',
+          'content': e.content,
+        },
+        'categories': [], # TODO
+        'origin': {
+          'streamId': e.origin.stream_id,
+          'title': e.origin.title,
+          'htmlUrl': e.origin.html_url,
+        },
+        'annotations': [], # TODO
+        'comments': [],
+        'likingUsers': [],
+      }
+
+      for link in e.links:
+        if not link.relation:
+          continue
+        link_json = {}
+        if link.href:
+          link_json['href'] = link.href
+        if link.type:
+          link_json['type'] = link.type
+        if link.title:
+          link_json['title'] = link.title
+        if link.length:
+          link_json['length'] = link.length
+        if link_json:
+          item_json.setdefault(link.relation, []).append(link_json)
+
+      items_json.append(item_json)
+
     response_json = {
       'direction': 'ltr',
       'id': stream_id,
       'title': '', # TODO
-      'items': [
-        {
-          'id': e.item_id.atom_form,
-          'crawlTimeMsec': str(int(
-              item_refs_by_item_id[e.item_id].timestamp_usec/1000)),
-          'timestampUsec': str(item_refs_by_item_id[e.item_id].timestamp_usec),
-          'published': 0, # TODO
-          'updated': 0, # TODO
-          'title': e.title,
-          'content': {
-            # Unfortunately Atom output did not appear to contain writing
-            # direction.
-            'direction': 'ltr',
-            'content': e.content,
-          },
-          'categories': [], # TODO
-          'origin': {
-            'streamId': e.origin.stream_id,
-            'title': e.origin.title,
-            'htmlUrl': e.origin.html_url,
-          },
-          'annotations': [], # TODO
-          'comments': [],
-          'likingUsers': [],
-        } for e in item_entries
-      ],
+      'items': items_json,
     }
 
     if continuation + count < len(stream.item_refs):
