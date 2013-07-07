@@ -201,8 +201,8 @@ class StreamContents(ApiHandler):
         'crawlTimeMsec': str(int(
             item_refs_by_item_id[e.item_id].timestamp_usec/1000)),
         'timestampUsec': str(item_refs_by_item_id[e.item_id].timestamp_usec),
-        'published': 0, # TODO
-        'updated': 0, # TODO
+        'published': e.published_sec,
+        'updated': e.updated_sec,
         'title': e.title,
         'content': {
           # Unfortunately Atom output did not appear to contain writing

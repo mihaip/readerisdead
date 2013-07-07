@@ -1,5 +1,7 @@
+import calendar
 import collections
 import logging
+import time
 import xml.etree.cElementTree as ET
 
 import base.api
@@ -55,6 +57,18 @@ def parse(xml_text_or_file):
          length=a.get('length'),
       ))
 
+    # Dates
+    crawl_time_msec = int(
+        entry_element.attrib['{%s}crawl-timestamp-msec' % READER_NS])
+    def parse_iso_8601(s):
+      return int(calendar.timegm(time.strptime(s, '%Y-%m-%dT%H:%M:%SZ')))
+    published_element = entry_element.find('{%s}published' % ATOM_NS)
+    published_sec = parse_iso_8601(published_element.text) \
+        if published_element is not None else crawl_time_msec/1000
+    updated_element = entry_element.find('{%s}updated' % ATOM_NS)
+    updated_sec = parse_iso_8601(updated_element.text) \
+        if updated_element is not None else crawl_time_msec/1000
+
     entries.append(Entry(
       item_id=item_id,
       title=title,
@@ -62,6 +76,8 @@ def parse(xml_text_or_file):
       element=entry_element,
       origin=origin,
       links=links,
+      published_sec=published_sec,
+      updated_sec=updated_sec,
     ))
   return Feed(entries=entries)
 
@@ -74,6 +90,8 @@ Entry = collections.namedtuple('Entry', [
     'content',
     'origin',
     'links',
+    'published_sec',
+    'updated_sec',
 
     # ElementTree element
     'element'])
