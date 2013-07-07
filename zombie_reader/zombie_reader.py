@@ -1,9 +1,11 @@
 import argparse
 import json
 import logging
+import operator
 import os.path
 import socket
 import sys
+import time
 import webbrowser
 
 import third_party.web as web
@@ -116,6 +118,7 @@ def _load_streams(archive_directory):
   streams_directory = os.path.join(archive_directory, 'streams')
   stream_file_names = os.listdir(streams_directory)
   logging.info('Loading item refs for %d streams', len(stream_file_names))
+  start_time = time.time()
   for i, stream_file_name in enumerate(stream_file_names):
     with open(os.path.join(streams_directory, stream_file_name)) as stream_file:
       stream_json = json.load(stream_file)
@@ -125,7 +128,8 @@ def _load_streams(archive_directory):
           for item_id_json, timestamp_usec
               in stream_json['item_refs'].iteritems()
       ]
-      stream_items = sorted(stream_items, key=lambda i: i[0], reverse=True)
+      stream_items = sorted(
+          stream_items, key=operator.itemgetter(0), reverse=True)
       stream_items_by_stream_id[stream_id] = stream_items
       # Don't care about non-user streams (for labelling as categories), or
       # about the reading-list stream (applied to most items, not used by the
@@ -139,7 +143,8 @@ def _load_streams(archive_directory):
         logging.debug('  %d/%d streams loaded', i + 1, len(stream_file_names))
   web.config.reader_stream_items_by_stream_id= stream_items_by_stream_id
   web.config.reader_stream_ids_by_item_id = stream_ids_by_item_id
-  logging.info('Loaded item refs from %d streams', len(stream_items_by_stream_id))
+  logging.info('Loaded item refs from %d streams in %g seconds',
+      len(stream_items_by_stream_id), time.time() - start_time)
 
 def _load_user_info(archive_directory):
   def _data_json(file_name):
