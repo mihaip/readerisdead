@@ -34,6 +34,9 @@ def parse(xml_text_or_file):
     if content_element is None:
       content_element = entry_element.find('{%s}summary' % ATOM_NS)
     content = content_element.text if content_element is not None else ''
+    content = content.replace(
+        'http://reader.googleusercontent.com/reader/embediframe',
+        '/reader/embediframe')
 
     source_element = entry_element.find('{%s}source' % ATOM_NS)
     source_link_element = source_element.find('{%s}link' % ATOM_NS)

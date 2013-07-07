@@ -27,6 +27,7 @@ urls = (
 
     # HTML handlers
     '/reader/overview', 'Overview',
+    '/reader/embediframe', 'EmbedIframe',
 
     # API handlers
     '/reader/api/0/subscription/list', 'api_handlers.SubscriptionList',
@@ -63,6 +64,12 @@ class Main:
 class Overview:
   def GET(self):
     return render.overview()
+
+class EmbedIframe:
+  def GET(self):
+    input = web.input()
+    return render.embed_iframe(
+        src=input.src, width=input.width, height=input.height)
 
 class StubbedOut:
   '''No-op handler, just avoids a 404.'''
