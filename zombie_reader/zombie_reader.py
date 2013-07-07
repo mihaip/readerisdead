@@ -130,8 +130,12 @@ def _load_streams(archive_directory):
       ]
       stream_items = sorted(
           stream_items, key=operator.itemgetter(0), reverse=True)
+      if stream_id.startswith('feed/'):
+        # Drop the timestamp for feed streams (saving a long and a tuple) since
+        # we can get it from the item body.
+        stream_items = [si[1] for si in stream_items]
       stream_items_by_stream_id[stream_id] = stream_items
-      # Don't care about non-user streams (for labelling as categories), or
+      # Don't care about non-user streams (for labeling as categories), or
       # about the reading-list stream (applied to most items, not used by the
       # UI).
       if stream_id.startswith('user/') and \
@@ -196,7 +200,6 @@ def _load_user_info(archive_directory):
       public_user_name=public_user_name, is_blogger_user=is_blogger_user,
       signup_time_sec=signup_time_sec,
       is_multi_login_enabled=is_multi_login_enabled)
-  logging.info(web.config.reader_user_info.to_json())
 
 
 def _run_app(app, port):

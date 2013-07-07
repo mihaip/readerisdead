@@ -193,16 +193,18 @@ class StreamContents(ApiHandler):
       return web.notfound('Stream ID %s was not archived' % stream_id)
     if ranking == 'o':
         stream_items = list(reversed(stream_items))
-    item_refs = [base.api.ItemRef(
-          item_id=base.api.ItemId(int_form=item_id_in_form),
-          timestamp_usec=timestamp_usec)
-        for timestamp_usec, item_id_in_form in
-            stream_items[continuation:continuation + count]]
-    item_refs_by_item_id = {i.item_id: i for i in item_refs}
 
+    item_refs = []
     item_entries = []
-    for item_ref in item_refs:
-      item_id = item_ref.item_id
+    for stream_item in stream_items[continuation:continuation + count]:
+      timestamp_usec = 0
+      if isinstance(stream_item, tuple):
+        timestamp_usec, item_id_int_form = stream_item
+      else:
+        # For feed streams we don't store the timestamp, since we can read it
+        # from the item body.
+        item_id_int_form = stream_item
+      item_id = base.api.ItemId(int_form=item_id_int_form)
       item_body_path = base.paths.item_id_to_file_path(
           os.path.join(web.config.reader_archive_directory, 'items'), item_id)
       if os.path.exists(item_body_path):
@@ -211,6 +213,8 @@ class StreamContents(ApiHandler):
           found_entry = False
           for entry in feed.entries:
             if entry.item_id == item_id:
+              if timestamp_usec == 0 and stream_id.startswith('feed/'):
+                timestamp_usec = entry.crawl_time_msec * 1000
               item_entries.append(entry)
               found_entry = True
               break
@@ -218,6 +222,10 @@ class StreamContents(ApiHandler):
             logging.warning('Did not find item entry for %s', item_id)
       else:
         logging.warning('No item body file entry for %s', item_id)
+      item_refs.append(
+          base.api.ItemRef(item_id=item_id, timestamp_usec=timestamp_usec))
+
+    item_refs_by_item_id = {i.item_id: i for i in item_refs}
 
     items_json = []
     for e in item_entries:
