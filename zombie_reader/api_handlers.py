@@ -126,6 +126,10 @@ class PreferenceList(ApiHandler):
       lhn_prefs = json.loads(preferences_json['lhn-prefs'])
       for section_json in lhn_prefs.values():
         section_json['suc'] = 'true'
+      # Collapse the recommendations/explore section by default, it's not really
+      # the user's data.
+      if 'recommendations' in lhn_prefs:
+        lhn_prefs['recommendations']['ism'] = 'true'
       preferences_json['lhn-prefs'] = json.dumps(lhn_prefs)
 
     return json.dumps({
