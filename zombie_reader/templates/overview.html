@@ -50,123 +50,115 @@ $code:
   def format_number(number):
     return '{:,}'.format(number)
 
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-  </head>
-  <body>
-    <div id="home">
-      <div id="sections-header">
-        <div class="contents">
-          <div class="lhn-nav-button-container"></div>
-          <div class="overview-section-header">
-            A look at what's <strike>new</strike> old in your Reader
+<div id="home">
+  <div id="sections-header">
+    <div class="contents">
+      <div class="lhn-nav-button-container"></div>
+      <div class="overview-section-header">
+        A look at what's <strike>new</strike> old in your Reader
+      </div>
+      <div class="settings-button-container"></div>
+      <div class="clear"></div>
+    </div>
+  </div>
+  <div id="sections-holder">
+    <div id="sections">
+      <div id="right-section">
+        <div class="overview-section">
+          <div class="section" id="recent-activity">
+            $if recent_starred_items:
+              $:recent_item_group('starred', 'Last starred', recent_starred_items)
+
+            $if recent_kept_unread_items:
+              $:recent_item_group('kept-unread', 'Last kept unread', recent_kept_unread_items)
+
+            $if recent_read_items:
+              $:recent_item_group('read', 'Last read', recent_read_items)
+
+            $if recent_broadcast_items:
+              $:recent_item_group('broadcast', 'Last shared', recent_broadcast_items)
           </div>
-          <div class="settings-button-container"></div>
-          <div class="clear"></div>
+          <div id="tips">
+            <div class="section-header">
+              Tips and tricks
+            </div>
+            <div id="tips-body">
+              <p class="promo-image-text">
+                All of the keyboard shortcuts that you were used to in Reader
+                still work. <b>g-a</b> still takes to the "All items" view,
+                <b>j</b> and <b>k</b> still take you through items, etc.
+              </p>
+              <p class="promo-image-text">
+                And if you need a refresher, <b>shift-/</b> (i.e. <b>?</b>) still
+                shows you a cheat sheet with all the shortcuts.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-      <div id="sections-holder">
-        <div id="sections">
-          <div id="right-section">
-            <div class="overview-section">
-              <div class="section" id="recent-activity">
-                $if recent_starred_items:
-                  $:recent_item_group('starred', 'Last starred', recent_starred_items)
-
-                $if recent_kept_unread_items:
-                  $:recent_item_group('kept-unread', 'Last kept unread', recent_kept_unread_items)
-
-                $if recent_read_items:
-                  $:recent_item_group('read', 'Last read', recent_read_items)
-
-                $if recent_broadcast_items:
-                  $:recent_item_group('broadcast', 'Last shared', recent_broadcast_items)
-              </div>
-              <div id="tips">
-                <div class="section-header">
-                  Tips and tricks
-                </div>
-                <div id="tips-body">
-                  <p class="promo-image-text">
-                    All of the keyboard shortcuts that you were used to in Reader
-                    still work. <b>g-a</b> still takes to the "All items" view,
-                    <b>j</b> and <b>k</b> still take you through items, etc.
-                  </p>
-                  <p class="promo-image-text">
-                    And if you need a refresher, <b>shift-/</b> (i.e. <b>?</b>) still
-                    shows you a cheat sheet with all the shortcuts.
-                  </p>
-                </div>
-              </div>
+      <div id="left-section">
+        <div class="overview-section">
+          <div id="overview">
+            <div class="section-header">
+              Your archived account data
             </div>
-          </div>
-          <div id="left-section">
-            <div class="overview-section">
-              <div id="overview">
-                <div class="section-header">
-                  Your archived account data
-                </div>
 
-                $if first_read_item:
-                  $:first_item_group('read-oldest-first', 'Your first read item', first_read_item, 'your read items', read_item_count)
+            $if first_read_item:
+              $:first_item_group('read-oldest-first', 'Your first read item', first_read_item, 'your read items', read_item_count)
 
-                $if first_starred_item:
-                  $:first_item_group('starred-oldest-first', 'Your first starred item', first_starred_item, 'your starred items', starred_item_count)
+            $if first_starred_item:
+              $:first_item_group('starred-oldest-first', 'Your first starred item', first_starred_item, 'your starred items', starred_item_count)
 
-                $if first_broadcast_item:
-                  $:first_item_group('broadcast-oldest-first', 'Your first shared item', first_broadcast_item, 'your shared items', broadcast_item_count)
+            $if first_broadcast_item:
+              $:first_item_group('broadcast-oldest-first', 'Your first shared item', first_broadcast_item, 'your shared items', broadcast_item_count)
 
-                $if followed_friends and broadcast_friends_item_count:
-                  <div class="section-header">
-                    Before the sharepocalypse&hellip;
-                  </div>
-
-                  <div class="overview-segment">
-                    Before the social features were
-                    <a class="label-link" href="http://googlereader.blogspot.com/2011/10/new-in-reader-fresh-design-and-google.html" target="_blank">removed</a>
-                    from Reader, you used to follow $format_number(len(followed_friends))
-                    people who had shared
-                    <a class="label-link" id="overview-user/-/state/com.google/broadcast-friends" href="">$format_number(broadcast_friends_item_count) items</a>.
-                    The Reader UI can no longer natively display the list of
-                    friends or comments, but you can still read the shared items:
-
-                    <ul style="margin: 1em 0; padding: 0 0 0 20px">
-                      $for friend in followed_friends:
-                        <li style="padding: 3px 0; list-style-type: none;">
-                          $code:
-                            photo_url = 'http://www.google.com%s' % friend.photo_url if friend.photo_url else '/reader/ui/4102662800-profile-default-large.png'
-                          <a class="label-link" id="overview-$friend.stream_id" href="">
-                            <img src="$photo_url" style="float: none; width: 16px; height: 16px; padding: 0 2px 0 0; vertical-align: text-bottom;">
-                            $friend.display_name
-                            <span class="unread">($format_number(friend.item_count) items)</span>
-                          </a>
-                        </li>
-                    </ul>
-                  </div>
+            $if followed_friends and broadcast_friends_item_count:
+              <div class="section-header">
+                Before the sharepocalypse&hellip;
               </div>
-            </div>
-          </div>
-        </div>
-        <div id="overview-footer">
-          <div id="footer">
-            <div id="viewer-links"></div>
-            <a target="_blank" href="http://googlereader.blogspot.com/"><b>Google Reader Blog</b></a>
-            -
-            <a href="https://www.google.com/reader/play/?hl=en" target="_new">Reader Play</a>
-            -
-            <a target="_blank" href="http://www.google.com/support/forum/p/reader">Discuss</a>
-            -
-            <a target="_blank" href="http://www.google.com/intl/en/privacy.html">Privacy Policy</a>
-            -
-            <a target="_blank" href="http://www.google.com/support/reader/?hl=en">Help</a>
-            <div class="copyright">
-              ©2013 Google
-            </div>
+
+              <div class="overview-segment">
+                Before the social features were
+                <a class="label-link" href="http://googlereader.blogspot.com/2011/10/new-in-reader-fresh-design-and-google.html" target="_blank">removed</a>
+                from Reader, you used to follow $format_number(len(followed_friends))
+                people who had shared
+                <a class="label-link" id="overview-user/-/state/com.google/broadcast-friends" href="">$format_number(broadcast_friends_item_count) items</a>.
+                The Reader UI can no longer natively display the list of
+                friends or comments, but you can still read the shared items:
+
+                <ul style="margin: 1em 0; padding: 0 0 0 20px">
+                  $for friend in followed_friends:
+                    <li style="padding: 3px 0; list-style-type: none;">
+                      $code:
+                        photo_url = 'http://www.google.com%s' % friend.photo_url if friend.photo_url else '/reader/ui/4102662800-profile-default-large.png'
+                      <a class="label-link" id="overview-$friend.stream_id" href="">
+                        <img src="$photo_url" style="float: none; width: 16px; height: 16px; padding: 0 2px 0 0; vertical-align: text-bottom;">
+                        $friend.display_name
+                        <span class="unread">($format_number(friend.item_count) items)</span>
+                      </a>
+                    </li>
+                </ul>
+              </div>
           </div>
         </div>
       </div>
     </div>
-  </body>
-</html>
+    <div id="overview-footer">
+      <div id="footer">
+        <div id="viewer-links"></div>
+        <a target="_blank" href="http://googlereader.blogspot.com/"><b>Google Reader Blog</b></a>
+        -
+        <a href="https://www.google.com/reader/play/?hl=en" target="_new">Reader Play</a>
+        -
+        <a target="_blank" href="http://www.google.com/support/forum/p/reader">Discuss</a>
+        -
+        <a target="_blank" href="http://www.google.com/intl/en/privacy.html">Privacy Policy</a>
+        -
+        <a target="_blank" href="http://www.google.com/support/reader/?hl=en">Help</a>
+        <div class="copyright">
+          ©2013 Google
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
