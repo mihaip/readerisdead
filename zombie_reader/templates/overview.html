@@ -1,4 +1,4 @@
-$def with (user_id, recent_read_items, recent_kept_unread_items, recent_starred_items, recent_broadcast_items, first_read_item, read_item_count, first_starred_item, starred_item_count, first_broadcast_item, broadcast_item_count)
+$def with (user_id, recent_read_items, recent_kept_unread_items, recent_starred_items, recent_broadcast_items, first_read_item, read_item_count, first_starred_item, starred_item_count, first_broadcast_item, broadcast_item_count, followed_friends, broadcast_friends_item_count)
 
 $def recent_item_group(state_tag_name, title, entries):
   <div id="recent-activity-$state_tag_name" class="recent">
@@ -81,7 +81,7 @@ $code:
                   $:recent_item_group('read', 'Last read', recent_read_items)
 
                 $if recent_broadcast_items:
-                  $:recent_item_group('broadcast', 'Last shared (before the sharepocalypse)', recent_broadcast_items)
+                  $:recent_item_group('broadcast', 'Last shared', recent_broadcast_items)
               </div>
               <div id="tips">
                 <div class="section-header">
@@ -116,6 +116,34 @@ $code:
 
                 $if first_broadcast_item:
                   $:first_item_group('broadcast-oldest-first', 'Your first shared item', first_broadcast_item, 'your shared items', broadcast_item_count)
+
+                $if followed_friends and broadcast_friends_item_count:
+                  <div class="section-header">
+                    Before the sharepocalypse&hellip;
+                  </div>
+
+                  <div class="overview-segment">
+                    Before the social features were
+                    <a class="label-link" href="http://googlereader.blogspot.com/2011/10/new-in-reader-fresh-design-and-google.html" target="_blank">removed</a>
+                    from Reader, you used to follow $format_number(len(followed_friends))
+                    people who had shared
+                    <a class="label-link" id="overview-user/-/state/com.google/broadcast-friends" href="">$format_number(broadcast_friends_item_count) items</a>.
+                    The Reader UI can no longer natively display the list of
+                    friends or comments, but you can still read the shared items:
+
+                    <ul style="margin: 1em 0; padding: 0 0 0 20px">
+                      $for friend in followed_friends:
+                        <li style="padding: 3px 0; list-style-type: none;">
+                          $code:
+                            photo_url = 'http://www.google.com%s' % friend.photo_url if friend.photo_url else '/reader/ui/4102662800-profile-default-large.png'
+                          <a class="label-link" id="overview-$friend.stream_id" href="">
+                            <img src="$photo_url" style="float: none; width: 16px; height: 16px; padding: 0 2px 0 0; vertical-align: text-bottom;">
+                            $friend.display_name
+                            <span class="unread">($format_number(friend.item_count) items)</span>
+                          </a>
+                        </li>
+                    </ul>
+                  </div>
               </div>
             </div>
           </div>

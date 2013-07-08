@@ -103,6 +103,16 @@ class Overview:
         return len(stream_items_by_stream_id[stream_id][0])
       return 0
 
+    friends = [base.api.Friend.from_json(t) for t in _data_json('friends.json')]
+    followed_friends = [
+        f for f in friends
+        if f.is_following and not f.is_current_user and
+            stream_items_by_stream_id.get(f.stream_id, ([], []))[0]
+    ]
+    for friend in followed_friends:
+      friend.item_count = len(stream_items_by_stream_id[friend.stream_id][0])
+    followed_friends.sort(key=lambda f: f.display_name)
+
     return render.overview(
       user_id=user_id,
       recent_read_items=load_recent_item_entries('read'),
@@ -115,7 +125,10 @@ class Overview:
       first_starred_item=load_first_item_entry('starred'),
       starred_item_count=item_count('starred'),
       first_broadcast_item=load_first_item_entry('broadcast'),
-      broadcast_item_count=item_count('broadcast'))
+      broadcast_item_count=item_count('broadcast'),
+
+      followed_friends=followed_friends,
+      broadcast_friends_item_count=item_count('broadcast-friends'))
 
 class EmbedIframe:
   def GET(self):
@@ -211,12 +224,13 @@ def _load_streams(archive_directory):
   logging.info('Loaded item refs from %d streams in %g seconds',
       len(stream_items_by_stream_id), time.time() - start_time)
 
-def _load_user_info(archive_directory):
-  def _data_json(file_name):
-    file_path = os.path.join(archive_directory, 'data', file_name)
-    with open(file_path) as data_file:
-      return json.load(data_file)
+def _data_json(file_name):
+  file_path = os.path.join(
+      web.config.reader_archive_directory, 'data', file_name)
+  with open(file_path) as data_file:
+    return json.load(data_file)
 
+def _load_user_info(archive_directory):
   try:
       web.config.reader_user_info = \
           base.api.UserInfo.from_json(_data_json('user-info.json'))
