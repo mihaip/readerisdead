@@ -45,7 +45,6 @@ $def first_item_group(state_tag_name, title, entry, link_title, item_count):
     </div>
   </div>
 
-
 $code:
   def format_number(number):
     return '{:,}'.format(number)
@@ -119,7 +118,7 @@ $code:
 
               <div class="overview-segment">
                 Before the social features were
-                <a class="label-link" href="http://googlereader.blogspot.com/2011/10/new-in-reader-fresh-design-and-google.html" target="_blank">removed</a>
+                <a style="text-decoration: none" href="http://googlereader.blogspot.com/2011/10/new-in-reader-fresh-design-and-google.html" target="_blank">removed</a>
                 from Reader, you used to follow $format_number(len(followed_friends))
                 people who had shared
                 <a class="label-link" id="overview-user/-/state/com.google/broadcast-friends" href="">$format_number(broadcast_friends_item_count) items</a>.
