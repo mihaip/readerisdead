@@ -109,9 +109,8 @@ class Overview:
         return len(stream_items_by_stream_id[stream_id][0])
       return 0
 
-    friends = [base.api.Friend.from_json(t) for t in _data_json('friends.json')]
     followed_friends = [
-        f for f in friends
+        f for f in web.config.reader_friends
         if f.is_following and not f.is_current_user and
             stream_items_by_stream_id.get(f.stream_id, ([], []))[0]
     ]
@@ -185,10 +184,17 @@ def main():
   _run_app(app, args.port)
 
 def _load_archive_data(archive_directory):
-  _load_user_info(archive_directory)
+  _load_user_info()
   user_info = web.config.reader_user_info
   logging.info('Loading archive for %s', user_info.email or user_info.user_name)
+  _load_friends()
   _load_streams(archive_directory)
+
+def _load_friends():
+  friends = [base.api.Friend.from_json(t) for t in _data_json('friends.json')]
+  friends_by_stream_id = {f.stream_id: f for f in friends}
+  web.config.reader_friends = friends
+  web.config.reader_friends_by_stream_id = friends_by_stream_id
 
 def _load_streams(archive_directory):
   stream_items_by_stream_id = {}
@@ -236,7 +242,7 @@ def _data_json(file_name):
   with open(file_path) as data_file:
     return json.load(data_file)
 
-def _load_user_info(archive_directory):
+def _load_user_info():
   try:
       web.config.reader_user_info = \
           base.api.UserInfo.from_json(_data_json('user-info.json'))

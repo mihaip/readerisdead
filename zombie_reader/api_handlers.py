@@ -291,6 +291,10 @@ class StreamContents(ApiHandler):
       'items': items_json,
     }
 
+    friends_by_stream_id = web.config.reader_friends_by_stream_id
+    if stream_id in friends_by_stream_id:
+      response_json['author'] = friends_by_stream_id[stream_id].display_name
+
     if continuation + count < len(stream_items[0]):
       response_json['continuation'] = continuation + count
 
