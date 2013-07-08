@@ -31,6 +31,7 @@ urls = (
     # HTML handlers
     '/reader/overview', 'Overview',
     '/reader/embediframe', 'EmbedIframe',
+    '/reader/trends', 'Trends',
 
     # API handlers
     '/reader/api/0/subscription/list', 'api_handlers.SubscriptionList',
@@ -42,6 +43,7 @@ urls = (
     '/reader/api/0/stream/contents/(.+)', 'api_handlers.StreamContents',
 
     # Stubbed-out handlers
+    '/reader/directory', 'StubbedOut',
     '/reader/logging', 'StubbedOut',
     '/reader/js-load-error', 'StubbedOut',
     '/reader/api/0/edit-tag', 'StubbedOut',
@@ -141,13 +143,17 @@ class EmbedIframe:
     return render.embed_iframe(
         src=input.src, width=input.width, height=input.height)
 
+class Trends:
+  def GET(self):
+    return render.trends()
+
 class StubbedOut:
   '''No-op handler, just avoids a 404.'''
   def GET(self):
-    return ''
+    return 'Not implemented.'
 
   def POST(self):
-    return ''
+    return 'Not implemented.'
 
 def main():
   base.log.init()
