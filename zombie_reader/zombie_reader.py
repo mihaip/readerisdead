@@ -1,4 +1,6 @@
 import argparse
+import datetime
+import itertools
 import json
 import logging
 import operator
@@ -82,11 +84,15 @@ class Overview:
           base.api.ItemId(int_form=i)
           for i in stream_item_ids[start_index:end_index]
       ]
+      item_timestamps = stream_items_by_stream_id[stream_id][1][start_index:end_index]
       item_entries = []
-      for item_id in item_ids:
+      for item_id, item_timestamp_usec in \
+          itertools.izip(item_ids, item_timestamps):
         item_entry = base.atom.load_item_entry(
             web.config.reader_archive_directory, item_id)
         if item_entry:
+          item_entry.display_timestamp = datetime.datetime.utcfromtimestamp(
+              item_timestamp_usec/1000000).strftime('%B %d, %Y')
           item_entries.append(item_entry)
       return item_entries
 

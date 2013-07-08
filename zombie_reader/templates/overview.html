@@ -29,6 +29,7 @@ $def first_item_group(state_tag_name, title, entry, link_title, item_count):
     <div class="overview-metadata" dir="ltr">
       <p class="link item-title overview-item-link" id="$entry.item_id.atom_form">
         $:entry.title
+         <br><span class="unread">$entry.display_timestamp</span>
       </p>
       <p class="item-snippet overview-item-link" id="$entry.item_id.atom_form">
         $:entry.content_snippet
