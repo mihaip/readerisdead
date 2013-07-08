@@ -41,6 +41,8 @@ urls = (
     '/reader/api/0/preference/stream/list', 'api_handlers.StreamPreferenceList',
     '/reader/api/0/unread-count', 'api_handlers.UnreadCount',
     '/reader/api/0/stream/contents/(.+)', 'api_handlers.StreamContents',
+    '/reader/api/0/stream/items/ids', 'api_handlers.StreamItemsIds',
+    '/reader/api/0/stream/items/contents', 'api_handlers.StreamItemsContents',
 
     # Stubbed-out handlers
     '/reader/directory', 'StubbedOut',

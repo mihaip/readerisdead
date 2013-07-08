@@ -18,6 +18,109 @@ class ApiHandler:
     with open(data_path) as data_file:
       return json.load(data_file)
 
+class ItemContentsHandler(ApiHandler):
+  def _fetch_render_item_refs(self, stream_id, item_refs, continuation):
+    item_entries = []
+    for item_ref in item_refs:
+      item_entry = base.atom.load_item_entry(
+          web.config.reader_archive_directory, item_ref.item_id)
+      if item_entry:
+        item_entries.append(item_entry)
+
+    item_refs_by_item_id = {i.item_id: i for i in item_refs}
+    stream_ids_by_item_id = web.config.reader_stream_ids_by_item_id
+    friends_by_stream_id = web.config.reader_friends_by_stream_id
+
+    items_json = []
+    for e in item_entries:
+      item_stream_ids = stream_ids_by_item_id.get(e.item_id.int_form, [])
+      timestamp_usec = item_refs_by_item_id[e.item_id].timestamp_usec
+      if not timestamp_usec:
+        # We don't have timestamps in the item ref when doing a separate item
+        # contents request.
+        timestamp_usec = e.crawl_time_msec * 1000
+      item_json = {
+        'id': e.item_id.atom_form,
+        'crawlTimeMsec': str(int(timestamp_usec/1000)),
+        'timestampUsec': str(timestamp_usec),
+        'published': e.published_sec,
+        'updated': e.updated_sec,
+        'title': e.title,
+        'content': {
+          # Unfortunately Atom output did not appear to contain writing
+          # direction.
+          'direction': 'ltr',
+          'content': e.content,
+        },
+        'categories': item_stream_ids,
+        'origin': {
+          'streamId': e.origin.stream_id,
+          'title': e.origin.title,
+          'htmlUrl': e.origin.html_url,
+        },
+        'annotations': [
+          {
+            'content': a.content,
+            'author': a.author_name,
+            'userId': a.author_user_id,
+            'profileId': a.author_profile_id,
+          } for a in e.annotations
+        ],
+        # We have comment data, but the Reader JS can't show it, so there's no
+        # point in outputting it.
+        'comments': [],
+        # Ditto for likers
+        'likingUsers': [],
+        # Prevents the keep unread item action from showing up.
+        'isReadStateLocked': True,
+      }
+
+      vias_json = []
+      for item_stream_id in item_stream_ids:
+        if item_stream_id in friends_by_stream_id:
+          friend = friends_by_stream_id[item_stream_id]
+          if friend.is_current_user:
+            continue
+          vias_json.append({
+            'href': 'http://www.google.com/reader/public/atom/%s' % item_stream_id,
+            'title': '%s\'s shared items' % friend.display_name,
+          })
+      if vias_json:
+        item_json['via'] = vias_json
+
+      for link in e.links:
+        if not link.relation:
+          continue
+        link_json = {}
+        if link.href:
+          link_json['href'] = link.href
+        if link.type:
+          link_json['type'] = link.type
+        if link.title:
+          link_json['title'] = link.title
+        if link.length:
+          link_json['length'] = link.length
+        if link_json:
+          item_json.setdefault(link.relation, []).append(link_json)
+
+      if e.author_name:
+        item_json['author'] = e.author_name
+
+      items_json.append(item_json)
+
+    response_json = {
+      'direction': 'ltr',
+      'id': stream_id,
+      'title': '', # TODO
+      'items': items_json,
+    }
+
+    if stream_id in friends_by_stream_id:
+      response_json['author'] = friends_by_stream_id[stream_id].display_name
+    if continuation:
+      response_json['continuation'] = continuation
+
+    return json.dumps(response_json)
 
 class SubscriptionList(ApiHandler):
   def GET(self):
@@ -178,7 +281,7 @@ class UnreadCount(ApiHandler):
     })
 
 
-class StreamContents(ApiHandler):
+class StreamContents(ItemContentsHandler):
   def GET(self, stream_id):
     stream_id = urllib.unquote_plus(stream_id)
     input = web.input(n=20, c=0, r='d')
@@ -196,15 +299,11 @@ class StreamContents(ApiHandler):
     if stream_id.startswith('user/-/'):
       stream_id = 'user/' + web.config.reader_user_info.user_id + stream_id[6:]
 
-    stream_ids_by_item_id = web.config.reader_stream_ids_by_item_id
-    friends_by_stream_id = web.config.reader_friends_by_stream_id
-
     stream_items = web.config.reader_stream_items_by_stream_id.get(stream_id)
     if not stream_items:
       return web.notfound('Stream ID %s was not archived' % stream_id)
 
     item_refs = []
-    item_entries = []
     if ranking != 'o':
       start_index = continuation
       end_index = continuation + count
@@ -220,100 +319,47 @@ class StreamContents(ApiHandler):
     for item_id_int_form, timestamp_usec in itertools.izip(
         chunk_stream_item_ids, chunk_stream_item_timestamps):
       item_id = base.api.ItemId(int_form=item_id_int_form)
-      item_entry = base.atom.load_item_entry(
-          web.config.reader_archive_directory, item_id)
-      if item_entry:
-        item_entries.append(item_entry)
       item_refs.append(
           base.api.ItemRef(item_id=item_id, timestamp_usec=timestamp_usec))
 
-    item_refs_by_item_id = {i.item_id: i for i in item_refs}
+    next_continuation = continuation + count \
+        if continuation + count < len(stream_items[0]) else None
+    return self._fetch_render_item_refs(stream_id, item_refs, next_continuation)
 
-    items_json = []
-    for e in item_entries:
-      item_stream_ids = stream_ids_by_item_id.get(e.item_id.int_form, [])
-      item_json = {
-        'id': e.item_id.atom_form,
-        'crawlTimeMsec': str(int(
-            item_refs_by_item_id[e.item_id].timestamp_usec/1000)),
-        'timestampUsec': str(item_refs_by_item_id[e.item_id].timestamp_usec),
-        'published': e.published_sec,
-        'updated': e.updated_sec,
-        'title': e.title,
-        'content': {
-          # Unfortunately Atom output did not appear to contain writing
-          # direction.
-          'direction': 'ltr',
-          'content': e.content,
-        },
-        'categories': item_stream_ids,
-        'origin': {
-          'streamId': e.origin.stream_id,
-          'title': e.origin.title,
-          'htmlUrl': e.origin.html_url,
-        },
-        'annotations': [
-          {
-            'content': a.content,
-            'author': a.author_name,
-            'userId': a.author_user_id,
-            'profileId': a.author_profile_id,
-          } for a in e.annotations
-        ],
-        # We have comment data, but the Reader JS can't show it, so there's no
-        # point in outputting it.
-        'comments': [],
-        # Ditto for likers
-        'likingUsers': [],
-        # Prevents the keep unread item action from showing up.
-        'isReadStateLocked': True,
-      }
+class StreamItemsIds(ApiHandler):
+  def GET(self):
+    input = web.input(r='d')
+    stream_id = input.s
+    count = int(input.n)
+    ranking = input.r
 
-      vias_json = []
-      for item_stream_id in item_stream_ids:
-        if item_stream_id in friends_by_stream_id:
-          friend = friends_by_stream_id[item_stream_id]
-          if friend.is_current_user:
-            continue
-          vias_json.append({
-            'href': 'http://www.google.com/reader/public/atom/%s' % item_stream_id,
-            'title': '%s\'s shared items' % friend.display_name,
-          })
-      if vias_json:
-        item_json['via'] = vias_json
+    stream_items = web.config.reader_stream_items_by_stream_id.get(stream_id)
+    if not stream_items:
+      return web.notfound('Stream ID %s was not archived' % stream_id)
 
-      for link in e.links:
-        if not link.relation:
-          continue
-        link_json = {}
-        if link.href:
-          link_json['href'] = link.href
-        if link.type:
-          link_json['type'] = link.type
-        if link.title:
-          link_json['title'] = link.title
-        if link.length:
-          link_json['length'] = link.length
-        if link_json:
-          item_json.setdefault(link.relation, []).append(link_json)
+    item_refs = [
+      base.api.ItemRef(base.api.ItemId(item_id_int_form), timestamp_usec)
+      for item_id_int_form, timestamp_usec in itertools.izip(*stream_items)
+    ]
 
-      if e.author_name:
-        item_json['author'] = e.author_name
+    return json.dumps({
+      'itemRefs': [
+        {
+          'id': item_ref.item_id.decimal_form,
+          'timestampUsec': item_ref.timestamp_usec,
+          'directStreamIds': [],
+        } for item_ref in item_refs
+      ]
+    })
 
-      items_json.append(item_json)
+class StreamItemsContents(ItemContentsHandler):
+  def POST(self):
+    input = web.input(i=[])
 
-    response_json = {
-      'direction': 'ltr',
-      'id': stream_id,
-      'title': '', # TODO
-      'items': items_json,
-    }
+    item_refs = []
+    for item_id_decimal_form in input.i:
+      item_refs.append(base.api.ItemRef(
+          base.api.item_id_from_decimal_form(item_id_decimal_form),
+          timestamp_usec=0))
 
-    friends_by_stream_id = web.config.reader_friends_by_stream_id
-    if stream_id in friends_by_stream_id:
-      response_json['author'] = friends_by_stream_id[stream_id].display_name
-
-    if continuation + count < len(stream_items[0]):
-      response_json['continuation'] = continuation + count
-
-    return json.dumps(response_json)
+    return self._fetch_render_item_refs(input.rs, item_refs, continuation=None)
