@@ -197,6 +197,7 @@ class StreamContents(ApiHandler):
       stream_id = 'user/' + web.config.reader_user_info.user_id + stream_id[6:]
 
     stream_ids_by_item_id = web.config.reader_stream_ids_by_item_id
+    friends_by_stream_id = web.config.reader_friends_by_stream_id
 
     stream_items = web.config.reader_stream_items_by_stream_id.get(stream_id)
     if not stream_items:
@@ -230,6 +231,7 @@ class StreamContents(ApiHandler):
 
     items_json = []
     for e in item_entries:
+      item_stream_ids = stream_ids_by_item_id.get(e.item_id.int_form, [])
       item_json = {
         'id': e.item_id.atom_form,
         'crawlTimeMsec': str(int(
@@ -244,8 +246,7 @@ class StreamContents(ApiHandler):
           'direction': 'ltr',
           'content': e.content,
         },
-        'categories':
-            [s for s in stream_ids_by_item_id.get(e.item_id.int_form, [])],
+        'categories': item_stream_ids,
         'origin': {
           'streamId': e.origin.stream_id,
           'title': e.origin.title,
@@ -267,6 +268,19 @@ class StreamContents(ApiHandler):
         # Prevents the keep unread item action from showing up.
         'isReadStateLocked': True,
       }
+
+      vias_json = []
+      for item_stream_id in item_stream_ids:
+        if item_stream_id in friends_by_stream_id:
+          friend = friends_by_stream_id[item_stream_id]
+          if friend.is_current_user:
+            continue
+          vias_json.append({
+            'href': 'http://www.google.com/reader/public/atom/%s' % item_stream_id,
+            'title': '%s\'s shared items' % friend.display_name,
+          })
+      if vias_json:
+        item_json['via'] = vias_json
 
       for link in e.links:
         if not link.relation:
