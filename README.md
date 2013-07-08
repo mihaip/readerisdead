@@ -16,6 +16,8 @@ bin/zombie_reader ~/Downloads/reader_archive
 
 [http://localhost:8074/](http://localhost:8074/) will then load in your browser (you can also open it manually). You will see the familiar Reader interface. All subscriptions, folders and tags should be clickable. The "Home" page has been repurposed to display some stats about your archive as well as links to archived data that cannot be reached through the normal Reader interface (mainly sharing-related data).
 
+For a demo of this tool, see [this screencast](http://www.youtube.com/watch?v=Xjbso_9-yGg).
+
 ## item_lookup
 
 _Look up an item in an archived Google Reader account._
