@@ -20,8 +20,8 @@ import base.paths
 import base.tag_helper
 
 _READER_STATIC_PATH_PREFIX = '/reader/ui/'
-_STATIC_DIRECTORY = os.path.abspath(os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), 'static'))
+_BASE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+_STATIC_DIRECTORY = os.path.abspath(os.path.join(_BASE_DIRECTORY, 'static'))
 
 urls = (
     '/', 'RedirectToMain',
@@ -54,8 +54,9 @@ urls = (
     '/reader/api/0/preference/set', 'StubbedOut',
     '/reader/api/0/token', 'StubbedOut',
 )
+
 render = web.template.render(
-    os.path.join('zombie_reader', 'templates'),
+    os.path.join(_BASE_DIRECTORY, 'templates'),
     globals={
       'js_escape': json.dumps,
     })
