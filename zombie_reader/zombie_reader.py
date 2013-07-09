@@ -55,7 +55,7 @@ urls = (
     '/reader/api/0/token', 'StubbedOut',
 )
 render = web.template.render(
-    'zombie_reader/templates/',
+    os.path.join('zombie_reader', 'templates'),
     globals={
       'js_escape': json.dumps,
     })
