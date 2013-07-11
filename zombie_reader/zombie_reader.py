@@ -214,7 +214,12 @@ def _load_streams(archive_directory):
   start_time = time.time()
   for i, stream_file_name in enumerate(stream_file_names):
     with open(os.path.join(streams_directory, stream_file_name)) as stream_file:
-      stream_json = json.load(stream_file)
+      try:
+        stream_json = json.load(stream_file)
+      except ValueError, e:
+        logging.warning(
+            'Could not parse JSON in stream file %s: %s', stream_file_name, e)
+        continue
       stream_id = stream_json['stream_id']
       stream_items = tuple(
           (timestamp_usec, int(item_id_json, 16))
