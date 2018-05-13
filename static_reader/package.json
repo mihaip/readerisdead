@@ -1,0 +1,22 @@
+{
+  "name": "static_reader",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "tsc -p .",
+    "watch": "npm run build -- -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mihaip/readerisdead.git"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/mihaip/readerisdead/issues"
+  },
+  "homepage": "https://github.com/mihaip/readerisdead#readme",
+  "devDependencies": {
+    "typescript": "^2.8.3"
+  }
+}

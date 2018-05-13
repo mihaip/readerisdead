@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cd static_reader
+python -m SimpleHTTPServer 8000

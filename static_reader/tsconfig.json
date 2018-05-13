@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "outFile": "reader/zombie.js",
+    "module": "system",
+    "esModuleInterop": true,
+    "removeComments": true,
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+  },
+  "files": [
+      "src/main.ts",
+  ],
+}
