@@ -1,4 +1,4 @@
-class Preferences {
+export class Preferences {
     private data_: { [key: string]: string } = {
         // Disable G+ share and email actions, since they won't work.
         // Abdulla: your feature finally gets some use!
@@ -26,16 +26,19 @@ class Preferences {
         "show-blogger-following-intro": "false",
     };
 
-    keys(): string[] {
-        return Object.keys(this.data_);
-    }
-
     get(key: string): string {
         return this.data_[key];
     }
 
     set(key: string, value: string): void {
         this.data_[key] = value;
+    }
+
+    toJson(): Object[] {
+        return Object.keys(this.data_).map(key => ({
+            "id": key,
+            "value": this.data_[key],
+        }));
     }
 }
 

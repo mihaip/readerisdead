@@ -4,15 +4,17 @@ export interface HandlerResponse {
 }
 
 export interface HandlerConstuctor {
-    new (url: URL, body?: string): Handler;
+    new (url: URL, urlPathMatchResult: string[], body?: string): Handler;
 }
 
 export abstract class Handler {
     protected url: URL;
+    protected urlPathMatchResult : string[];
     protected params: URLSearchParams;
 
-    constructor(url: URL, body?: string) {
+    constructor(url: URL, urlPathMatchResult: string[], body?: string) {
         this.url = url;
+        this.urlPathMatchResult = urlPathMatchResult;
         let paramsString: string = url.search;
         if (body) {
             paramsString += "&" + body;
