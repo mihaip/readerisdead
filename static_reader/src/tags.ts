@@ -11,8 +11,8 @@ class Tag {
 
     toJson(): Object {
         return {
-            "id": this.streamId,
-            "sortid": this.sortId,
+            id: this.streamId,
+            sortid: this.sortId,
         };
     }
 }
@@ -21,10 +21,10 @@ class Tags {
     private data_: Map<string, Tag> = new Map();
 
     constructor() {
-        const stateTag: (name: string) => Tag =
-            name => new Tag(`user/-/state/com.google/${name}`);
-        const labelTag: (name: string) => Tag =
-            name => new Tag(`user/-/label/${name}`);
+        const stateTag: (name: string) => Tag = name =>
+            new Tag(`user/-/state/com.google/${name}`);
+        const labelTag: (name: string) => Tag = name =>
+            new Tag(`user/-/label/${name}`);
 
         this.add(stateTag("reading-list"));
         this.add(stateTag("starred"));

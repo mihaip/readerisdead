@@ -1,4 +1,3 @@
-
 import {ApiHandler, HandlerConstuctor} from "./Handler";
 import preferences from "./preferences";
 import streamPreferences from "./streamPreferences";
@@ -8,7 +7,7 @@ import tags from "./tags";
 const handlersByPath: Map<string, HandlerConstuctor> = new Map();
 const handlersByRegExp: Map<RegExp, HandlerConstuctor> = new Map();
 
-function Path(pathPattern: string|RegExp) {
+function Path(pathPattern: string | RegExp) {
     return function(handlerConstuctor: HandlerConstuctor) {
         if (typeof pathPattern === "string") {
             handlersByPath.set(pathPattern, handlerConstuctor);
@@ -21,10 +20,9 @@ function Path(pathPattern: string|RegExp) {
 @Path("/reader/api/0/preference/list")
 export class PreferenceListHandler extends ApiHandler {
     handleApi() {
-
         const responseJson = {
-            "prefs": preferences.toJson(),
-        }
+            prefs: preferences.toJson(),
+        };
         return {responseJson};
     }
 }
@@ -46,13 +44,14 @@ export class PreferenceSetHandler extends ApiHandler {
 export class StreamPreferenceListHandler extends ApiHandler {
     handleApi() {
         const streamIds = tags.streamIds().concat(subscriptions.streamIds());
-        const streamPreferencesJson: { [key: string]: Object } = {};
+        const streamPreferencesJson: {[key: string]: Object} = {};
         streamIds.forEach(streamId => {
-            streamPreferencesJson[streamId] =
-                streamPreferences.get(streamId).toJson();
+            streamPreferencesJson[streamId] = streamPreferences
+                .get(streamId)
+                .toJson();
         });
         const responseJson = {
-            "streamprefs": streamPreferencesJson,
+            streamprefs: streamPreferencesJson,
         };
         return {responseJson};
     }
@@ -62,8 +61,8 @@ export class StreamPreferenceListHandler extends ApiHandler {
 export class UnreadCountHandler extends ApiHandler {
     handleApi() {
         const responseJson = {
-            "max": 1000000,
-            "unreadcounts": [],
+            max: 1000000,
+            unreadcounts: [],
         };
         return {responseJson};
     }
@@ -73,7 +72,7 @@ export class UnreadCountHandler extends ApiHandler {
 export class RecommendationListHandler extends ApiHandler {
     handleApi() {
         const responseJson = {
-            "recs": [],
+            recs: [],
         };
         return {responseJson};
     }
@@ -83,7 +82,7 @@ export class RecommendationListHandler extends ApiHandler {
 export class TagListHandler extends ApiHandler {
     handleApi() {
         const responseJson = {
-            "tags": tags.all().map(tag => tag.toJson()),
+            tags: tags.all().map(tag => tag.toJson()),
         };
         return {responseJson};
     }
@@ -93,13 +92,13 @@ export class TagListHandler extends ApiHandler {
 export class SubscriptionListHandler extends ApiHandler {
     handleApi() {
         const responseJson = {
-            "subscriptions": subscriptions.all().map(s => s.toJson()),
+            subscriptions: subscriptions.all().map(s => s.toJson()),
         };
         return {responseJson};
     }
 }
 
-declare var _CANNED_FEED_DATA: { [key: string]: Object };
+declare var _CANNED_FEED_DATA: {[key: string]: Object};
 
 @Path(new RegExp("/reader/api/0/stream/contents/(.+)"))
 export class StreamContentsHandler extends ApiHandler {
@@ -113,7 +112,10 @@ export class StreamContentsHandler extends ApiHandler {
     }
 }
 
-export const handlerFn = (url: URL, body?: string): { responseText: string, status: number } => {
+export const handlerFn = (
+    url: URL,
+    body?: string
+): {responseText: string; status: number} => {
     let handlerConstructor = handlersByPath.get(url.pathname);
     let handlerPathMatchResult;
     if (handlerConstructor) {
@@ -130,7 +132,10 @@ export const handlerFn = (url: URL, body?: string): { responseText: string, stat
     }
     if (handlerConstructor && handlerPathMatchResult) {
         const handler = new handlerConstructor(
-            url, handlerPathMatchResult, body);
+            url,
+            handlerPathMatchResult,
+            body
+        );
         const {responseText, status} = handler.handle();
         return {responseText, status: status !== undefined ? status : 200};
     }

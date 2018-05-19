@@ -9,7 +9,7 @@ export interface HandlerConstuctor {
 
 export abstract class Handler {
     protected url: URL;
-    protected urlPathMatchResult : string[];
+    protected urlPathMatchResult: string[];
     protected params: URLSearchParams;
 
     constructor(url: URL, urlPathMatchResult: string[], body?: string) {
@@ -34,8 +34,9 @@ export abstract class ApiHandler extends Handler {
     handle(): HandlerResponse {
         const {responseJson, status} = this.handleApi();
         return {
-            responseText: responseJson ?
-                JSON.stringify(responseJson, undefined, 2) : "",
+            responseText: responseJson
+                ? JSON.stringify(responseJson, undefined, 2)
+                : "",
             status,
         };
     }

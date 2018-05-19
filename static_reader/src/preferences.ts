@@ -1,12 +1,12 @@
 export class Preferences {
-    private data_: { [key: string]: string } = {
+    private data_: {[key: string]: string} = {
         // Disable G+ share and email actions, since they won't work.
         // Abdulla: your feature finally gets some use!
         "item-actions": JSON.stringify({
-          "plusone-action": true,
-          "share-action": false,
-          "email-action": false,
-          "tags-action": true,
+            "plusone-action": true,
+            "share-action": false,
+            "email-action": false,
+            "tags-action": true,
         }),
 
         // Oldest first is no longer limited to the last 30 days, don't
@@ -36,8 +36,8 @@ export class Preferences {
 
     toJson(): Object[] {
         return Object.keys(this.data_).map(key => ({
-            "id": key,
-            "value": this.data_[key],
+            id: key,
+            value: this.data_[key],
         }));
     }
 }

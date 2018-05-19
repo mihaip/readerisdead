@@ -15,4 +15,3 @@ class StreamPreferences {
 
 const streamPreferences = new StreamPreferences();
 export default streamPreferences;
-

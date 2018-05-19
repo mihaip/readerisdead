@@ -1,4 +1,3 @@
-
 export default class FakeXMLHttpRequest {
     private readyState_: ReadyState;
     private status_: number;
@@ -36,7 +35,6 @@ export default class FakeXMLHttpRequest {
         }
     }
 
-
     set onreadystatechange(handler: (ev: ProgressEvent) => any) {
         this.readyStateChangeHandler_ = handler;
     }
@@ -55,11 +53,16 @@ export default class FakeXMLHttpRequest {
 
     get statusText() {
         switch (this.status_) {
-            case 0: return "Offline";
-            case 200: return "OK";
-            case 404: return "Not Found";
-            case 500: return "Internal Server Error";
-            default: return "Unknown";
+            case 0:
+                return "Offline";
+            case 200:
+                return "OK";
+            case 404:
+                return "Not Found";
+            case 500:
+                return "Internal Server Error";
+            default:
+                return "Unknown";
         }
     }
 
@@ -72,10 +75,12 @@ export default class FakeXMLHttpRequest {
         }
         const url = new URL(this.url_, location.href);
         const {responseText, status} = FakeXMLHttpRequest.handlerFn_(
-            url, this.body_);
+            url,
+            this.body_
+        );
 
         this.responseText_ = responseText;
-        this.status_ = status;;
+        this.status_ = status;
         this.setReadyState_(ReadyState.DONE);
     }
 
@@ -91,7 +96,6 @@ export default class FakeXMLHttpRequest {
     getResponseHeader(name: string): string | null {
         return null;
     }
-
 }
 
 enum ReadyState {
@@ -99,7 +103,10 @@ enum ReadyState {
     OPENED = 1,
     HEADERS_RECEIVED = 2,
     LOADING = 3,
-    DONE = 4
-};
+    DONE = 4,
+}
 
-type HandlerFn = (url: URL, body?: string) => { responseText: string, status: number };
+type HandlerFn = (
+    url: URL,
+    body?: string
+) => {responseText: string; status: number};

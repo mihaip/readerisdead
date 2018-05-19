@@ -17,12 +17,12 @@ class Subscription {
 
     toJson(): Object {
         return {
-            "id": this.streamId,
-            "title": this.title,
-            "sortid": this.sortId,
-            "firstitemmsec": this.firstItemMsec,
-            "categories": [],
-            "htmlUrl": this.htmlUrl,
+            id: this.streamId,
+            title: this.title,
+            sortid: this.sortId,
+            firstitemmsec: this.firstItemMsec,
+            categories: [],
+            htmlUrl: this.htmlUrl,
         };
     }
 }
@@ -49,9 +49,12 @@ class Subscriptions {
 
 const subscriptions = new Subscriptions();
 
-subscriptions.add(new Subscription(
-    "http://googlereader.blogspot.com/atom.xml",
-    "The Official Google Reader Blog",
-    "http://googlereader.blogspot.com/"));
+subscriptions.add(
+    new Subscription(
+        "http://googlereader.blogspot.com/atom.xml",
+        "The Official Google Reader Blog",
+        "http://googlereader.blogspot.com/"
+    )
+);
 
 export default subscriptions;
