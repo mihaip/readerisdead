@@ -1,2 +1,3 @@
 node_modules/
 reader/zombie.js
+reader/canned-data.js

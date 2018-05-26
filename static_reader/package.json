@@ -5,6 +5,8 @@
     "scripts": {
         "build": "tsc -p .",
         "watch": "npm run build -- -w",
+        "serve": "python -m SimpleHTTPServer 8000",
+        "generate_canned_data": "python scripts/generate_canned_data.py",
         "precommit": "pretty-quick --staged"
     },
     "repository": {
