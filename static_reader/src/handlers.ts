@@ -1,4 +1,5 @@
 import {ApiHandler, HandlerConstuctor} from "./Handler";
+import getCannedData from "./cannedData";
 import preferences from "./preferences";
 import streamPreferences from "./streamPreferences";
 import subscriptions from "./subscriptions";
@@ -98,13 +99,11 @@ export class SubscriptionListHandler extends ApiHandler {
     }
 }
 
-declare var _CANNED_FEED_DATA: {[key: string]: Object};
-
 @Path(new RegExp("/reader/api/0/stream/contents/(.+)"))
 export class StreamContentsHandler extends ApiHandler {
     handleApi() {
         const streamId = decodeURIComponent(this.urlPathMatchResult[1]);
-        const streamJson = _CANNED_FEED_DATA[streamId];
+        const streamJson = getCannedData()[streamId];
         if (streamJson) {
             return {responseJson: streamJson};
         }

@@ -7,6 +7,13 @@ import xml.sax.saxutils
 
 _CANNED_FEED_URLS = [
     "http://googlereader.blogspot.com/atom.xml",
+    "http://feeds.feedburner.com/PersistentInfo",
+    "http://feeds.feedburner.com/xenomachina",
+    # "http://www.footbag.org/index2/index.rss", # Not parseable
+    # "http://feeds.feedburner.com/furycom", # Not a feed
+    "http://massless.org/index.html%3Ffeed=rss2",
+    "http://blog.shellen.com/feeds/posts/default",
+    "http://www.blogger.com/feeds/6616843/posts/default",
 ]
 _CANNED_DATA_OUTPUT_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "../reader/canned-data.js"))
@@ -17,9 +24,16 @@ canned_data_json = {}
 for feed_url in _CANNED_FEED_URLS:
     stream_id = "feed/%s" % feed_url
     feed = feedparser.parse(feed_url)
+    crawl_time_sec = time.time()
     crawl_time_msec = time.time() * 1000
 
-    feed_json = {"items": []}
+    feed_json = {
+        "id": stream_id,
+        "title": feed.feed.title,
+        "htmlUrl": feed.feed.link,
+        "updated": crawl_time_sec,
+        "items": [],
+    }
     canned_data_json[stream_id] = feed_json
 
     origin_json = {
@@ -60,6 +74,8 @@ for feed_url in _CANNED_FEED_URLS:
             "likingUsers": [],
         }
         feed_json["items"].append(item_json)
+
+    print "  Crawled %s with %d items" % (feed_url, len(feed.entries))
 
 with open(_CANNED_DATA_OUTPUT_PATH, "w") as o:
     o.write("const _CANNED_FEED_DATA = %s;\n" % json.dumps(

@@ -1,4 +1,5 @@
 import {generateSortId} from "./sortIds";
+import getCannedData from "./cannedData";
 
 class Subscription {
     public streamId: string;
@@ -7,8 +8,8 @@ class Subscription {
     public sortId: string;
     public firstItemMsec: number;
 
-    constructor(feedUrl: string, title: string, htmlUrl: string) {
-        this.streamId = `feed/${feedUrl}`;
+    constructor(streamId: string, title: string, htmlUrl: string) {
+        this.streamId = streamId;
         this.title = title;
         this.htmlUrl = htmlUrl;
         this.sortId = generateSortId();
@@ -49,12 +50,15 @@ class Subscriptions {
 
 const subscriptions = new Subscriptions();
 
-subscriptions.add(
-    new Subscription(
-        "http://googlereader.blogspot.com/atom.xml",
-        "The Official Google Reader Blog",
-        "http://googlereader.blogspot.com/"
-    )
-);
+for (const streamId in getCannedData()) {
+    const cannedStreamData = getCannedData()[streamId];
+    subscriptions.add(
+        new Subscription(
+            cannedStreamData["id"],
+            cannedStreamData["title"],
+            cannedStreamData["htmlUrl"]
+        )
+    );
+}
 
 export default subscriptions;
