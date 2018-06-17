@@ -1,0 +1,3 @@
+SystemJS (https://github.com/systemjs/systemjs) support library to get TypeScript output to load in the browser.
+
+Downloaded from https://github.com/systemjs/systemjs/blob/master/dist/system-production.js
