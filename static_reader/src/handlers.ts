@@ -1,6 +1,7 @@
-import {ApiHandler, HandlerConstuctor} from "./Handler";
+import {ApiHandler, Handler, HandlerConstuctor} from "./Handler";
 import getCannedData from "./cannedData";
 import preferences from "./preferences";
+import renderOverviewPage from "./overview";
 import streamPreferences from "./streamPreferences";
 import subscriptions from "./subscriptions";
 import tags from "./tags";
@@ -16,6 +17,16 @@ function Path(pathPattern: string | RegExp) {
             handlersByRegExp.set(pathPattern, handlerConstuctor);
         }
     };
+}
+
+@Path("/reader/overview")
+export class OverviewHandler extends Handler {
+    handle() {
+        return {
+            responseText: renderOverviewPage(),
+            status: 200,
+        };
+    }
 }
 
 @Path("/reader/api/0/preference/list")
