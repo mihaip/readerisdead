@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"><html><head><meta http-equiv="content-type" content="text/html;charset=utf-8">
+<title>Google Reader keyboard shortcuts</title>
+<style type="text/css">
+    html, body {
+      margin: 0;
+      background: #fff;
+      color: #000;
+    }
+
+    body {
+      padding: 1em;
+    }
+
+    html, body, input {
+      font-family: arial, sans-serif;
+    }
+
+    h1 {
+      margin-top: 0;
+      text-align: center;
+      font-size: 130%;
+    }
+    
+    #keyboard-help {
+      margin: 0 auto;
+    }
+    
+    #keyboard-help th {
+      color: #666;
+      padding-top: 0.5em;
+    }
+
+    #keyboard-help .key {
+      text-align: right;
+      font-weight: bold;
+      padding-right: 0.25em;
+      white-space: nowrap;    
+      width: 10em;
+    }  
+  
+    #keyboard-help .desc {
+      text-align: left;
+      font-weight: normal;
+    }  
+    
+    #keyboard-help-tearoff-link-container {
+      display: none;
+    }
+
+    #keyboard-help td.help-section {
+      vertical-align: top
+    }
+  </style></head>
+<body><h1>Google Reader keyboard shortcuts</h1>
+<div id="keyboard-help-container"><table id="keyboard-help"><tr><td class="help-section"><table><tr><th colspan="2">Navigation</th></tr>
+<tr><td class="key">j/k:</td>
+<td class="desc">next/previous item</td></tr>
+<tr><td class="key">space:</td>
+<td class="desc">next item or page</td></tr>
+<tr><td class="key">&lt;Shift&gt; + space:</td>
+<td class="desc">previous item or page</td></tr>
+<tr><td class="key">n/p:</td>
+<td class="desc">item scan down/up (list only)</td></tr>
+<tr><td class="key">&lt;Shift&gt; + n/p:</td>
+<td class="desc">next/previous subscription</td></tr>
+<tr><td class="key">&lt;Shift&gt; + x:</td>
+<td class="desc">expand folder</td></tr>
+<tr><td class="key">&lt;Shift&gt; + o:</td>
+<td class="desc">open subscription or folder</td></tr></table></td>
+<td class="help-section"><table><tr><th colspan="2">Application</th></tr>
+<tr><td class="key">r:</td>
+<td class="desc">refresh</td></tr>
+<tr><td class="key">f:</td>
+<td class="desc">toggle full screen mode</td></tr>
+<tr><td class="key">u:</td>
+<td class="desc">hides/unhides the left hand side module</td></tr>
+<tr><td class="key">1:</td>
+<td class="desc">switch to expanded view</td></tr>
+<tr><td class="key">2:</td>
+<td class="desc">switch to list view</td></tr>
+<tr><td class="key">/:</td>
+<td class="desc">move cursor to search box</td></tr>
+<tr><td class="key">a:</td>
+<td class="desc">add a subscription</td></tr>
+<tr><td class="key">=:</td>
+<td class="desc">increase magnification</td></tr>
+<tr><td class="key">-:</td>
+<td class="desc">decrease magnification</td></tr></table></td></tr>
+<tr><td class="help-section"><table><tr><th colspan="2">Jumping</th></tr>
+<tr><td class="key">g then h:</td>
+<td class="desc">go home</td></tr>
+<tr><td class="key">g then a:</td>
+<td class="desc">go to all items</td></tr>
+<tr><td class="key">g then s:</td>
+<td class="desc">go to starred items</td></tr>
+<tr><td class="key">g then u:</td>
+<td class="desc">open subscription selector</td></tr>
+<tr><td class="key">g then t:</td>
+<td class="desc">open tag selector</td></tr>
+<tr><td class="key">g then &lt;Shift&gt; + t:</td>
+<td class="desc">go to trends page</td></tr>
+<tr><td class="key">g then d:</td>
+<td class="desc">go to discovery page</td></tr>
+<tr><td class="key">g then e:</td>
+<td class="desc">go to explore</td></tr>
+<tr><td class="key">g then p:</td>
+<td class="desc">go to popular items</td></tr></table></td>
+<td class="help-section"><table><tr><th colspan="2">Acting on items</th></tr>
+<tr><td class="key">s:</td>
+<td class="desc">star item</td></tr>
+<tr><td class="key">t:</td>
+<td class="desc">tag item</td></tr>
+<tr><td class="key">e:</td>
+<td class="desc">email item</td></tr>
+<tr><td class="key">&lt;Shift&gt; + s:</td>
+<td class="desc">share item</td></tr>
+<tr><td class="key">v:</td>
+<td class="desc">view original</td></tr>
+<tr><td class="key">o/enter:</td>
+<td class="desc">expand/collapse item (list only)</td></tr>
+<tr><td class="key">m:</td>
+<td class="desc">mark item as read/unread</td></tr>
+<tr><td class="key">&lt;Shift&gt; + a:</td>
+<td class="desc">mark all as read</td></tr>
+<tr><td class="key">&lt;Shift&gt; + t:</td>
+<td class="desc">open &ldquo;send to&rdquo; menu</td></tr></table></td></tr></table>
+<div id="keyboard-help-tearoff-link-container"><span class="link keyboard-help-tearoff-link open-new-window-link">Open in a new window</span>
+-
+<span class="link keyboard-help-tearoff-link close-help-link">Close</span></div></div></body></html>
