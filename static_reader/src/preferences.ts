@@ -9,6 +9,18 @@ export class Preferences {
             "tags-action": true,
         }),
 
+        "lhn-prefs": JSON.stringify({
+            // Collapse the "All Items" section by default, trends and other
+            // things are not going to be populated.
+            selectors: {
+                ism: "true",
+            },
+            // Same with "Explore"
+            recommendations: {
+                ism: "true",
+            },
+        }),
+
         // Oldest first is no longer limited to the last 30 days, don't
         /// show the interruption that warns about that.
         "show-oldest-interrupt": "false",
