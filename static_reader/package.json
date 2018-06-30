@@ -7,6 +7,7 @@
         "watch": "npm run build -- -w",
         "serve": "python -m SimpleHTTPServer 8000",
         "generate_canned_data": "python scripts/generate_canned_data.py",
+        "push": "scripts/push.sh",
         "precommit": "pretty-quick --staged"
     },
     "repository": {
