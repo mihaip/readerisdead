@@ -59,7 +59,7 @@ def crawl_feed_url(feed_url):
                 }
             ],
             "timestampUsec": json.dumps(
-                time.mktime(entry.updated_parsed) * 1000000),
+                time.mktime(entry.published_parsed) * 1000000),
             "content": {
                 "content": to_html(content),
                 "direction": "ltr",

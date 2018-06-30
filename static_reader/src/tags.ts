@@ -18,14 +18,25 @@ class Tag {
     }
 }
 
+export class FolderTag extends Tag {
+    public readonly name: string;
+
+    constructor(name: string) {
+        super(`user/-/label/${name}`);
+        this.name = name;
+    }
+}
+
 class Tags {
+    public readonly readingList: Tag;
     private data_: Map<string, Tag> = new Map();
 
     constructor() {
         const stateTag: (name: string) => Tag = name =>
             new Tag(`user/-/state/com.google/${name}`);
 
-        this.add(stateTag("reading-list"));
+        this.readingList = stateTag("reading-list");
+        this.add(this.readingList);
         this.add(stateTag("starred"));
         this.add(stateTag("read"));
         this.add(stateTag("kept-unread"));
@@ -51,7 +62,7 @@ class Tags {
 const tags = new Tags();
 
 for (const folder of getCannedFolders()) {
-    tags.add(new Tag(`user/-/label/${folder}`));
+    tags.add(new FolderTag(folder));
 }
 
 export default tags;

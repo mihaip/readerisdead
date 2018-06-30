@@ -4,6 +4,7 @@ import {
     getCannedStreamData,
     getCannedStreamFolders,
 } from "./cannedData";
+import {FolderTag} from "./tags";
 
 class Subscription {
     public streamId: string;
@@ -11,7 +12,7 @@ class Subscription {
     public htmlUrl: string;
     public sortId: string;
     public firstItemMsec: number;
-    public folders: string[];
+    public folders: FolderTag[];
 
     constructor(streamId: string, title: string, htmlUrl: string) {
         this.streamId = streamId;
@@ -23,7 +24,7 @@ class Subscription {
     }
 
     addFolder(folder: string): void {
-        this.folders.push(folder);
+        this.folders.push(new FolderTag(folder));
     }
 
     toJson(): Object {
@@ -33,8 +34,8 @@ class Subscription {
             sortid: this.sortId,
             firstitemmsec: this.firstItemMsec,
             categories: this.folders.map(folder => ({
-                id: `user/-/label/${folder}`,
-                label: folder,
+                id: folder.streamId,
+                label: folder.name,
             })),
             htmlUrl: this.htmlUrl,
         };
