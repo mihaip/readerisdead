@@ -129,22 +129,9 @@ System.register("Handler", [], function (exports_2, context_2) {
         }
     };
 });
-System.register("cannedData", [], function (exports_3, context_3) {
+System.register("preferences", [], function (exports_3, context_3) {
     "use strict";
     var __moduleName = context_3 && context_3.id;
-    function getCannedData() {
-        return _CANNED_FEED_DATA;
-    }
-    exports_3("default", getCannedData);
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
-});
-System.register("preferences", [], function (exports_4, context_4) {
-    "use strict";
-    var __moduleName = context_4 && context_4.id;
     var Preferences, preferences;
     return {
         setters: [],
@@ -157,6 +144,14 @@ System.register("preferences", [], function (exports_4, context_4) {
                             "share-action": false,
                             "email-action": false,
                             "tags-action": true,
+                        }),
+                        "lhn-prefs": JSON.stringify({
+                            selectors: {
+                                ism: "true",
+                            },
+                            recommendations: {
+                                ism: "true",
+                            },
                         }),
                         "show-oldest-interrupt": "false",
                         "read-items-visible": "true",
@@ -179,15 +174,241 @@ System.register("preferences", [], function (exports_4, context_4) {
                     }));
                 }
             };
-            exports_4("Preferences", Preferences);
+            exports_3("Preferences", Preferences);
             preferences = new Preferences();
-            exports_4("default", preferences);
+            exports_3("default", preferences);
         }
     };
 });
-System.register("overview", ["cannedData"], function (exports_5, context_5) {
+System.register("cannedData", [], function (exports_4, context_4) {
+    "use strict";
+    var __moduleName = context_4 && context_4.id;
+    function getCannedStreamIds() {
+        return Object.keys(_CANNED_FEED_DATA);
+    }
+    exports_4("getCannedStreamIds", getCannedStreamIds);
+    function getCannedStreamData(streamId) {
+        return _CANNED_FEED_DATA[streamId];
+    }
+    exports_4("getCannedStreamData", getCannedStreamData);
+    function getCannedFolders() {
+        return Object.keys(_CANNED_FOLDER_DATA);
+    }
+    exports_4("getCannedFolders", getCannedFolders);
+    function getCannedStreamFolders(streamId) {
+        return getCannedFolders().filter(folder => _CANNED_FOLDER_DATA[folder].indexOf(streamId) != -1);
+    }
+    exports_4("getCannedStreamFolders", getCannedStreamFolders);
+    return {
+        setters: [],
+        execute: function () {
+        }
+    };
+});
+System.register("sortIds", [], function (exports_5, context_5) {
     "use strict";
     var __moduleName = context_5 && context_5.id;
+    function s4() {
+        return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+    }
+    function generateSortId() {
+        return s4() + s4();
+    }
+    exports_5("generateSortId", generateSortId);
+    return {
+        setters: [],
+        execute: function () {
+        }
+    };
+});
+System.register("tags", ["sortIds", "cannedData"], function (exports_6, context_6) {
+    "use strict";
+    var __moduleName = context_6 && context_6.id;
+    var sortIds_1, cannedData_1, Tag, FolderTag, Tags, tags;
+    return {
+        setters: [
+            function (sortIds_1_1) {
+                sortIds_1 = sortIds_1_1;
+            },
+            function (cannedData_1_1) {
+                cannedData_1 = cannedData_1_1;
+            }
+        ],
+        execute: function () {
+            Tag = class Tag {
+                constructor(streamId) {
+                    this.streamId = streamId;
+                    this.sortId = sortIds_1.generateSortId();
+                }
+                toJson() {
+                    return {
+                        id: this.streamId,
+                        sortid: this.sortId,
+                    };
+                }
+            };
+            FolderTag = class FolderTag extends Tag {
+                constructor(name) {
+                    super(`user/-/label/${name}`);
+                    this.name = name;
+                }
+            };
+            exports_6("FolderTag", FolderTag);
+            Tags = class Tags {
+                constructor() {
+                    this.data_ = new Map();
+                    const stateTag = name => new Tag(`user/-/state/com.google/${name}`);
+                    this.readingList = stateTag("reading-list");
+                    this.add(this.readingList);
+                    this.add(stateTag("starred"));
+                    this.add(stateTag("read"));
+                    this.add(stateTag("kept-unread"));
+                }
+                streamIds() {
+                    return Array.from(this.data_.values()).map(tag => tag.streamId);
+                }
+                add(tag) {
+                    this.data_.set(tag.streamId, tag);
+                }
+                remove(tag) {
+                    this.data_.delete(tag.streamId);
+                }
+                all() {
+                    return Array.from(this.data_.values());
+                }
+            };
+            tags = new Tags();
+            for (const folder of cannedData_1.getCannedFolders()) {
+                tags.add(new FolderTag(folder));
+            }
+            exports_6("default", tags);
+        }
+    };
+});
+System.register("subscriptions", ["sortIds", "cannedData", "tags"], function (exports_7, context_7) {
+    "use strict";
+    var __moduleName = context_7 && context_7.id;
+    var sortIds_2, cannedData_2, tags_1, Subscription, Subscriptions, subscriptions;
+    return {
+        setters: [
+            function (sortIds_2_1) {
+                sortIds_2 = sortIds_2_1;
+            },
+            function (cannedData_2_1) {
+                cannedData_2 = cannedData_2_1;
+            },
+            function (tags_1_1) {
+                tags_1 = tags_1_1;
+            }
+        ],
+        execute: function () {
+            Subscription = class Subscription {
+                constructor(streamId, title, htmlUrl) {
+                    this.streamId = streamId;
+                    this.title = title;
+                    this.htmlUrl = htmlUrl;
+                    this.sortId = sortIds_2.generateSortId();
+                    this.firstItemMsec = 0;
+                    this.folders = [];
+                }
+                addFolder(folder) {
+                    this.folders.push(new tags_1.FolderTag(folder));
+                }
+                toJson() {
+                    return {
+                        id: this.streamId,
+                        title: this.title,
+                        sortid: this.sortId,
+                        firstitemmsec: this.firstItemMsec,
+                        categories: this.folders.map(folder => ({
+                            id: folder.streamId,
+                            label: folder.name,
+                        })),
+                        htmlUrl: this.htmlUrl,
+                    };
+                }
+            };
+            Subscriptions = class Subscriptions {
+                constructor() {
+                    this.subscriptions_ = [];
+                }
+                all() {
+                    return this.subscriptions_;
+                }
+                add(subscription) {
+                    this.subscriptions_.push(subscription);
+                }
+                streamIds() {
+                    return this.subscriptions_.map(s => s.streamId);
+                }
+            };
+            subscriptions = new Subscriptions();
+            for (const streamId of cannedData_2.getCannedStreamIds()) {
+                const cannedStreamData = cannedData_2.getCannedStreamData(streamId);
+                const subscription = new Subscription(cannedStreamData["id"], cannedStreamData["title"], cannedStreamData["htmlUrl"]);
+                for (const folder of cannedData_2.getCannedStreamFolders(streamId)) {
+                    subscription.addFolder(folder);
+                }
+                subscriptions.add(subscription);
+            }
+            exports_7("default", subscriptions);
+        }
+    };
+});
+System.register("streams", ["cannedData", "tags", "subscriptions"], function (exports_8, context_8) {
+    "use strict";
+    var __moduleName = context_8 && context_8.id;
+    var cannedData, tags_2, subscriptions_1, Streams, streams;
+    return {
+        setters: [
+            function (cannedData_3) {
+                cannedData = cannedData_3;
+            },
+            function (tags_2_1) {
+                tags_2 = tags_2_1;
+            },
+            function (subscriptions_1_1) {
+                subscriptions_1 = subscriptions_1_1;
+            }
+        ],
+        execute: function () {
+            Streams = class Streams {
+                getStreamJson(streamId) {
+                    if (streamId.startsWith("feed/")) {
+                        return cannedData.getCannedStreamData(streamId);
+                    }
+                    let expandedSubscriptions;
+                    if (streamId == tags_2.default.readingList.streamId) {
+                        expandedSubscriptions = subscriptions_1.default.all();
+                    }
+                    else {
+                        expandedSubscriptions = subscriptions_1.default
+                            .all()
+                            .filter(s => s.folders.some(f => f.streamId == streamId));
+                    }
+                    if (!expandedSubscriptions) {
+                        return null;
+                    }
+                    const mergedStreamData = { items: [] };
+                    for (let subscription of expandedSubscriptions) {
+                        const streamId = subscription.streamId;
+                        const streamData = cannedData.getCannedStreamData(streamId);
+                        mergedStreamData.items = mergedStreamData.items.concat(streamData.items);
+                    }
+                    mergedStreamData.items.sort((item1, item2) => {
+                        return item2.published - item1.published;
+                    });
+                    return mergedStreamData;
+                }
+            };
+            streams = new Streams();
+            exports_8("default", streams);
+        }
+    };
+});
+System.register("overview", ["streams"], function (exports_9, context_9) {
+    "use strict";
+    var __moduleName = context_9 && context_9.id;
     function htmlEscape(str) {
         return str
             .replace(/&/g, "&amp;")
@@ -202,7 +423,7 @@ System.register("overview", ["cannedData"], function (exports_5, context_5) {
             .replace(/&amp;/g, "&");
     }
     function renderStreamItem(streamId) {
-        const streamJson = cannedData_1.default()[streamId];
+        const streamJson = streams_1.default.getStreamJson(streamId);
         const title = streamJson["title"];
         const item = streamJson["items"][0];
         return `
@@ -300,21 +521,21 @@ System.register("overview", ["cannedData"], function (exports_5, context_5) {
 </div>
 `;
     }
-    exports_5("default", renderOverviewPage);
-    var cannedData_1;
+    exports_9("default", renderOverviewPage);
+    var streams_1;
     return {
         setters: [
-            function (cannedData_1_1) {
-                cannedData_1 = cannedData_1_1;
+            function (streams_1_1) {
+                streams_1 = streams_1_1;
             }
         ],
         execute: function () {
         }
     };
 });
-System.register("streamPreferences", ["preferences"], function (exports_6, context_6) {
+System.register("streamPreferences", ["preferences"], function (exports_10, context_10) {
     "use strict";
-    var __moduleName = context_6 && context_6.id;
+    var __moduleName = context_10 && context_10.id;
     var preferences_1, StreamPreferences, streamPreferences;
     return {
         setters: [
@@ -337,137 +558,13 @@ System.register("streamPreferences", ["preferences"], function (exports_6, conte
                 }
             };
             streamPreferences = new StreamPreferences();
-            exports_6("default", streamPreferences);
+            exports_10("default", streamPreferences);
         }
     };
 });
-System.register("sortIds", [], function (exports_7, context_7) {
+System.register("handlers", ["Handler", "preferences", "overview", "streams", "streamPreferences", "subscriptions", "tags"], function (exports_11, context_11) {
     "use strict";
-    var __moduleName = context_7 && context_7.id;
-    function s4() {
-        return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
-    }
-    function generateSortId() {
-        return s4() + s4();
-    }
-    exports_7("generateSortId", generateSortId);
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
-});
-System.register("subscriptions", ["sortIds", "cannedData"], function (exports_8, context_8) {
-    "use strict";
-    var __moduleName = context_8 && context_8.id;
-    var sortIds_1, cannedData_2, Subscription, Subscriptions, subscriptions;
-    return {
-        setters: [
-            function (sortIds_1_1) {
-                sortIds_1 = sortIds_1_1;
-            },
-            function (cannedData_2_1) {
-                cannedData_2 = cannedData_2_1;
-            }
-        ],
-        execute: function () {
-            Subscription = class Subscription {
-                constructor(streamId, title, htmlUrl) {
-                    this.streamId = streamId;
-                    this.title = title;
-                    this.htmlUrl = htmlUrl;
-                    this.sortId = sortIds_1.generateSortId();
-                    this.firstItemMsec = 0;
-                }
-                toJson() {
-                    return {
-                        id: this.streamId,
-                        title: this.title,
-                        sortid: this.sortId,
-                        firstitemmsec: this.firstItemMsec,
-                        categories: [],
-                        htmlUrl: this.htmlUrl,
-                    };
-                }
-            };
-            Subscriptions = class Subscriptions {
-                constructor() {
-                    this.subscriptions_ = [];
-                }
-                all() {
-                    return this.subscriptions_;
-                }
-                add(subscription) {
-                    this.subscriptions_.push(subscription);
-                }
-                streamIds() {
-                    return this.subscriptions_.map(s => s.streamId);
-                }
-            };
-            subscriptions = new Subscriptions();
-            for (const streamId in cannedData_2.default()) {
-                const cannedStreamData = cannedData_2.default()[streamId];
-                subscriptions.add(new Subscription(cannedStreamData["id"], cannedStreamData["title"], cannedStreamData["htmlUrl"]));
-            }
-            exports_8("default", subscriptions);
-        }
-    };
-});
-System.register("tags", ["sortIds"], function (exports_9, context_9) {
-    "use strict";
-    var __moduleName = context_9 && context_9.id;
-    var sortIds_2, Tag, Tags, tags;
-    return {
-        setters: [
-            function (sortIds_2_1) {
-                sortIds_2 = sortIds_2_1;
-            }
-        ],
-        execute: function () {
-            Tag = class Tag {
-                constructor(streamId) {
-                    this.streamId = streamId;
-                    this.sortId = sortIds_2.generateSortId();
-                }
-                toJson() {
-                    return {
-                        id: this.streamId,
-                        sortid: this.sortId,
-                    };
-                }
-            };
-            Tags = class Tags {
-                constructor() {
-                    this.data_ = new Map();
-                    const stateTag = name => new Tag(`user/-/state/com.google/${name}`);
-                    const labelTag = name => new Tag(`user/-/label/${name}`);
-                    this.add(stateTag("reading-list"));
-                    this.add(stateTag("starred"));
-                    this.add(stateTag("read"));
-                    this.add(stateTag("kept-unread"));
-                    this.add(labelTag("Reader Team"));
-                }
-                streamIds() {
-                    return Array.from(this.data_.values()).map(tag => tag.streamId);
-                }
-                add(tag) {
-                    this.data_.set(tag.streamId, tag);
-                }
-                remove(tag) {
-                    this.data_.delete(tag.streamId);
-                }
-                all() {
-                    return Array.from(this.data_.values());
-                }
-            };
-            tags = new Tags();
-            exports_9("default", tags);
-        }
-    };
-});
-System.register("handlers", ["Handler", "cannedData", "preferences", "overview", "streamPreferences", "subscriptions", "tags"], function (exports_10, context_10) {
-    "use strict";
-    var __moduleName = context_10 && context_10.id;
+    var __moduleName = context_11 && context_11.id;
     function Path(pathPattern) {
         return function (handlerConstuctor) {
             if (typeof pathPattern === "string") {
@@ -478,14 +575,11 @@ System.register("handlers", ["Handler", "cannedData", "preferences", "overview",
             }
         };
     }
-    var Handler_1, cannedData_3, preferences_2, overview_1, streamPreferences_1, subscriptions_1, tags_1, handlersByPath, handlersByRegExp, OverviewHandler, PreferenceListHandler, PreferenceSetHandler, StreamPreferenceListHandler, UnreadCountHandler, RecommendationListHandler, TagListHandler, SubscriptionListHandler, StreamContentsHandler, handlerFn;
+    var Handler_1, preferences_2, overview_1, streams_2, streamPreferences_1, subscriptions_2, tags_3, handlersByPath, handlersByRegExp, OverviewHandler, PreferenceListHandler, PreferenceSetHandler, StreamPreferenceListHandler, UnreadCountHandler, RecommendationListHandler, TagListHandler, SubscriptionListHandler, StreamContentsHandler, handlerFn;
     return {
         setters: [
             function (Handler_1_1) {
                 Handler_1 = Handler_1_1;
-            },
-            function (cannedData_3_1) {
-                cannedData_3 = cannedData_3_1;
             },
             function (preferences_2_1) {
                 preferences_2 = preferences_2_1;
@@ -493,14 +587,17 @@ System.register("handlers", ["Handler", "cannedData", "preferences", "overview",
             function (overview_1_1) {
                 overview_1 = overview_1_1;
             },
+            function (streams_2_1) {
+                streams_2 = streams_2_1;
+            },
             function (streamPreferences_1_1) {
                 streamPreferences_1 = streamPreferences_1_1;
             },
-            function (subscriptions_1_1) {
-                subscriptions_1 = subscriptions_1_1;
+            function (subscriptions_2_1) {
+                subscriptions_2 = subscriptions_2_1;
             },
-            function (tags_1_1) {
-                tags_1 = tags_1_1;
+            function (tags_3_1) {
+                tags_3 = tags_3_1;
             }
         ],
         execute: function () {
@@ -517,7 +614,7 @@ System.register("handlers", ["Handler", "cannedData", "preferences", "overview",
             OverviewHandler = __decorate([
                 Path("/reader/overview")
             ], OverviewHandler);
-            exports_10("OverviewHandler", OverviewHandler);
+            exports_11("OverviewHandler", OverviewHandler);
             PreferenceListHandler = class PreferenceListHandler extends Handler_1.ApiHandler {
                 handleApi() {
                     const responseJson = {
@@ -529,7 +626,7 @@ System.register("handlers", ["Handler", "cannedData", "preferences", "overview",
             PreferenceListHandler = __decorate([
                 Path("/reader/api/0/preference/list")
             ], PreferenceListHandler);
-            exports_10("PreferenceListHandler", PreferenceListHandler);
+            exports_11("PreferenceListHandler", PreferenceListHandler);
             PreferenceSetHandler = class PreferenceSetHandler extends Handler_1.ApiHandler {
                 handleApi() {
                     const key = this.params.get("k");
@@ -544,10 +641,10 @@ System.register("handlers", ["Handler", "cannedData", "preferences", "overview",
             PreferenceSetHandler = __decorate([
                 Path("/reader/api/0/preference/set")
             ], PreferenceSetHandler);
-            exports_10("PreferenceSetHandler", PreferenceSetHandler);
+            exports_11("PreferenceSetHandler", PreferenceSetHandler);
             StreamPreferenceListHandler = class StreamPreferenceListHandler extends Handler_1.ApiHandler {
                 handleApi() {
-                    const streamIds = tags_1.default.streamIds().concat(subscriptions_1.default.streamIds());
+                    const streamIds = tags_3.default.streamIds().concat(subscriptions_2.default.streamIds());
                     const streamPreferencesJson = {};
                     streamIds.forEach(streamId => {
                         streamPreferencesJson[streamId] = streamPreferences_1.default
@@ -563,7 +660,7 @@ System.register("handlers", ["Handler", "cannedData", "preferences", "overview",
             StreamPreferenceListHandler = __decorate([
                 Path("/reader/api/0/preference/stream/list")
             ], StreamPreferenceListHandler);
-            exports_10("StreamPreferenceListHandler", StreamPreferenceListHandler);
+            exports_11("StreamPreferenceListHandler", StreamPreferenceListHandler);
             UnreadCountHandler = class UnreadCountHandler extends Handler_1.ApiHandler {
                 handleApi() {
                     const responseJson = {
@@ -576,7 +673,7 @@ System.register("handlers", ["Handler", "cannedData", "preferences", "overview",
             UnreadCountHandler = __decorate([
                 Path("/reader/api/0/unread-count")
             ], UnreadCountHandler);
-            exports_10("UnreadCountHandler", UnreadCountHandler);
+            exports_11("UnreadCountHandler", UnreadCountHandler);
             RecommendationListHandler = class RecommendationListHandler extends Handler_1.ApiHandler {
                 handleApi() {
                     const responseJson = {
@@ -588,11 +685,11 @@ System.register("handlers", ["Handler", "cannedData", "preferences", "overview",
             RecommendationListHandler = __decorate([
                 Path("/reader/api/0/recommendation/list")
             ], RecommendationListHandler);
-            exports_10("RecommendationListHandler", RecommendationListHandler);
+            exports_11("RecommendationListHandler", RecommendationListHandler);
             TagListHandler = class TagListHandler extends Handler_1.ApiHandler {
                 handleApi() {
                     const responseJson = {
-                        tags: tags_1.default.all().map(tag => tag.toJson()),
+                        tags: tags_3.default.all().map(tag => tag.toJson()),
                     };
                     return { responseJson };
                 }
@@ -600,11 +697,11 @@ System.register("handlers", ["Handler", "cannedData", "preferences", "overview",
             TagListHandler = __decorate([
                 Path("/reader/api/0/tag/list")
             ], TagListHandler);
-            exports_10("TagListHandler", TagListHandler);
+            exports_11("TagListHandler", TagListHandler);
             SubscriptionListHandler = class SubscriptionListHandler extends Handler_1.ApiHandler {
                 handleApi() {
                     const responseJson = {
-                        subscriptions: subscriptions_1.default.all().map(s => s.toJson()),
+                        subscriptions: subscriptions_2.default.all().map(s => s.toJson()),
                     };
                     return { responseJson };
                 }
@@ -612,11 +709,11 @@ System.register("handlers", ["Handler", "cannedData", "preferences", "overview",
             SubscriptionListHandler = __decorate([
                 Path("/reader/api/0/subscription/list")
             ], SubscriptionListHandler);
-            exports_10("SubscriptionListHandler", SubscriptionListHandler);
+            exports_11("SubscriptionListHandler", SubscriptionListHandler);
             StreamContentsHandler = class StreamContentsHandler extends Handler_1.ApiHandler {
                 handleApi() {
                     const streamId = decodeURIComponent(this.urlPathMatchResult[1]);
-                    const streamJson = cannedData_3.default()[streamId];
+                    const streamJson = streams_2.default.getStreamJson(streamId);
                     if (streamJson) {
                         return { responseJson: streamJson };
                     }
@@ -626,8 +723,8 @@ System.register("handlers", ["Handler", "cannedData", "preferences", "overview",
             StreamContentsHandler = __decorate([
                 Path(new RegExp("/reader/api/0/stream/contents/(.+)"))
             ], StreamContentsHandler);
-            exports_10("StreamContentsHandler", StreamContentsHandler);
-            exports_10("handlerFn", handlerFn = (url, body) => {
+            exports_11("StreamContentsHandler", StreamContentsHandler);
+            exports_11("handlerFn", handlerFn = (url, body) => {
                 let handlerConstructor = handlersByPath.get(url.pathname);
                 let handlerPathMatchResult;
                 if (handlerConstructor) {
@@ -654,9 +751,9 @@ System.register("handlers", ["Handler", "cannedData", "preferences", "overview",
         }
     };
 });
-System.register("main", ["FakeXMLHttpRequest", "handlers"], function (exports_11, context_11) {
+System.register("main", ["FakeXMLHttpRequest", "handlers"], function (exports_12, context_12) {
     "use strict";
-    var __moduleName = context_11 && context_11.id;
+    var __moduleName = context_12 && context_12.id;
     var FakeXMLHttpRequest_1, handlers_1;
     return {
         setters: [
