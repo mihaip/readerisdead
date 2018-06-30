@@ -1,5 +1,9 @@
 import {generateSortId} from "./sortIds";
-import getCannedData from "./cannedData";
+import {
+    getCannedStreamIds,
+    getCannedStreamData,
+    getCannedStreamFolders,
+} from "./cannedData";
 
 class Subscription {
     public streamId: string;
@@ -7,6 +11,7 @@ class Subscription {
     public htmlUrl: string;
     public sortId: string;
     public firstItemMsec: number;
+    public folders: string[];
 
     constructor(streamId: string, title: string, htmlUrl: string) {
         this.streamId = streamId;
@@ -14,6 +19,11 @@ class Subscription {
         this.htmlUrl = htmlUrl;
         this.sortId = generateSortId();
         this.firstItemMsec = 0;
+        this.folders = [];
+    }
+
+    addFolder(folder: string): void {
+        this.folders.push(folder);
     }
 
     toJson(): Object {
@@ -22,7 +32,10 @@ class Subscription {
             title: this.title,
             sortid: this.sortId,
             firstitemmsec: this.firstItemMsec,
-            categories: [],
+            categories: this.folders.map(folder => ({
+                id: `user/-/label/${folder}`,
+                label: folder,
+            })),
             htmlUrl: this.htmlUrl,
         };
     }
@@ -50,15 +63,17 @@ class Subscriptions {
 
 const subscriptions = new Subscriptions();
 
-for (const streamId in getCannedData()) {
-    const cannedStreamData = getCannedData()[streamId];
-    subscriptions.add(
-        new Subscription(
-            cannedStreamData["id"],
-            cannedStreamData["title"],
-            cannedStreamData["htmlUrl"]
-        )
+for (const streamId of getCannedStreamIds()) {
+    const cannedStreamData = getCannedStreamData(streamId);
+    const subscription = new Subscription(
+        cannedStreamData["id"],
+        cannedStreamData["title"],
+        cannedStreamData["htmlUrl"]
     );
+    for (const folder of getCannedStreamFolders(streamId)) {
+        subscription.addFolder(folder);
+    }
+    subscriptions.add(subscription);
 }
 
 export default subscriptions;

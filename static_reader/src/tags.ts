@@ -1,4 +1,5 @@
 import {generateSortId} from "./sortIds";
+import {getCannedFolders} from "./cannedData";
 
 class Tag {
     public readonly streamId: string;
@@ -23,14 +24,11 @@ class Tags {
     constructor() {
         const stateTag: (name: string) => Tag = name =>
             new Tag(`user/-/state/com.google/${name}`);
-        const labelTag: (name: string) => Tag = name =>
-            new Tag(`user/-/label/${name}`);
 
         this.add(stateTag("reading-list"));
         this.add(stateTag("starred"));
         this.add(stateTag("read"));
         this.add(stateTag("kept-unread"));
-        this.add(labelTag("Reader Team"));
     }
 
     streamIds(): string[] {
@@ -51,4 +49,9 @@ class Tags {
 }
 
 const tags = new Tags();
+
+for (const folder of getCannedFolders()) {
+    tags.add(new Tag(`user/-/label/${folder}`));
+}
+
 export default tags;

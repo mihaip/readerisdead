@@ -1,4 +1,4 @@
-import getCannedData from "./cannedData";
+import streams from "./streams";
 
 function htmlEscape(str: string): string {
     return str
@@ -16,7 +16,7 @@ function htmlStrip(str: string): string {
 }
 
 function renderStreamItem(streamId: string): string {
-    const streamJson = getCannedData()[streamId];
+    const streamJson = streams.getStreamJson(streamId);
     const title = streamJson["title"];
     const item = streamJson["items"][0];
 

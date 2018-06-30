@@ -1,7 +1,7 @@
 import {ApiHandler, Handler, HandlerConstuctor} from "./Handler";
-import getCannedData from "./cannedData";
 import preferences from "./preferences";
 import renderOverviewPage from "./overview";
+import streams from "./streams";
 import streamPreferences from "./streamPreferences";
 import subscriptions from "./subscriptions";
 import tags from "./tags";
@@ -114,7 +114,7 @@ export class SubscriptionListHandler extends ApiHandler {
 export class StreamContentsHandler extends ApiHandler {
     handleApi() {
         const streamId = decodeURIComponent(this.urlPathMatchResult[1]);
-        const streamJson = getCannedData()[streamId];
+        const streamJson = streams.getStreamJson(streamId);
         if (streamJson) {
             return {responseJson: streamJson};
         }
