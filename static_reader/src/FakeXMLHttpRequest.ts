@@ -28,11 +28,12 @@ export default class FakeXMLHttpRequest {
 
     send(body?: string) {
         this.body_ = body;
-        if (this.async_) {
-            setTimeout(() => this.handle_(), 0);
-        } else {
-            this.handle_();
+        if (!this.async_) {
+            console.warn(
+                `{this.url_} requested with synchronous XMLHttpRequest, running synchornously anyway`
+            );
         }
+        Promise.resolve(this.handle_());
     }
 
     set onreadystatechange(handler: (ev: ProgressEvent) => any) {
@@ -66,12 +67,21 @@ export default class FakeXMLHttpRequest {
         }
     }
 
-    handle_() {
+    async handle_() {
         if (!this.url_) {
             throw new Error("send() called before open()");
         }
         if (!FakeXMLHttpRequest.handlerFn_) {
             throw new Error("no handler function is set");
+        }
+        // Allow real network requests for things within /reader/ui (this
+        // is used for the keyboard shortcut cheat sheet).
+        if (this.url_.startsWith("/reader/ui")) {
+            const response = await fetch(this.url_);
+            this.responseText_ = await response.text();
+            this.status_ = response.status;
+            this.setReadyState_(ReadyState.DONE);
+            return;
         }
         const url = new URL(this.url_, location.href);
         const {responseText, status} = FakeXMLHttpRequest.handlerFn_(
