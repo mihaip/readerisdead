@@ -1,3 +1,11 @@
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -27,12 +35,10 @@ System.register("FakeXMLHttpRequest", [], function (exports_1, context_1) {
                 }
                 send(body) {
                     this.body_ = body;
-                    if (this.async_) {
-                        setTimeout(() => this.handle_(), 0);
+                    if (!this.async_) {
+                        console.warn(`{this.url_} requested with synchronous XMLHttpRequest, running synchornously anyway`);
                     }
-                    else {
-                        this.handle_();
-                    }
+                    Promise.resolve(this.handle_());
                 }
                 set onreadystatechange(handler) {
                     this.readyStateChangeHandler_ = handler;
@@ -61,17 +67,26 @@ System.register("FakeXMLHttpRequest", [], function (exports_1, context_1) {
                     }
                 }
                 handle_() {
-                    if (!this.url_) {
-                        throw new Error("send() called before open()");
-                    }
-                    if (!FakeXMLHttpRequest.handlerFn_) {
-                        throw new Error("no handler function is set");
-                    }
-                    const url = new URL(this.url_, location.href);
-                    const { responseText, status } = FakeXMLHttpRequest.handlerFn_(url, this.body_);
-                    this.responseText_ = responseText;
-                    this.status_ = status;
-                    this.setReadyState_(ReadyState.DONE);
+                    return __awaiter(this, void 0, void 0, function* () {
+                        if (!this.url_) {
+                            throw new Error("send() called before open()");
+                        }
+                        if (!FakeXMLHttpRequest.handlerFn_) {
+                            throw new Error("no handler function is set");
+                        }
+                        if (this.url_.startsWith("/reader/ui")) {
+                            const response = yield fetch(this.url_);
+                            this.responseText_ = yield response.text();
+                            this.status_ = response.status;
+                            this.setReadyState_(ReadyState.DONE);
+                            return;
+                        }
+                        const url = new URL(this.url_, location.href);
+                        const { responseText, status } = FakeXMLHttpRequest.handlerFn_(url, this.body_);
+                        this.responseText_ = responseText;
+                        this.status_ = status;
+                        this.setReadyState_(ReadyState.DONE);
+                    });
                 }
                 setReadyState_(readyState) {
                     this.readyState_ = readyState;
